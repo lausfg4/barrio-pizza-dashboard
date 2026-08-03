@@ -42,6 +42,37 @@ footer {{visibility: hidden;}}
 }}
 [data-testid="stToolbar"] {{visibility: hidden;}}
 
+/* Botón flotante para expandir el sidebar (Asegura visibilidad y clicabilidad de la flecha) */
+button[data-testid="stHeaderSidebarCollapse"], 
+button[data-testid="stSidebarCollapse"],
+div[data-testid="collapsedSidebarHashes"] button {{
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background-color: #B71C1C !important;
+    color: #FFFFFF !important;
+    border-radius: 50% !important;
+    padding: 6px !important;
+    position: fixed !important;
+    top: 12px !important;
+    left: 15px !important;
+    z-index: 999999 !important;
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.4) !important;
+    width: 38px !important;
+    height: 38px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #B71C1C !important;
+}}
+
+/* Pintar la flecha interna de color blanco para contraste */
+button[data-testid="stHeaderSidebarCollapse"] svg, 
+button[data-testid="stSidebarCollapse"] svg,
+div[data-testid="collapsedSidebarHashes"] button svg {{
+    fill: #FFFFFF !important;
+    color: #FFFFFF !important;
+}}
+
 /* Ajustar paddings de la pantalla principal */
 .block-container {{
     padding-top: 1.5rem !important;
