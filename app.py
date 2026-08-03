@@ -29,46 +29,36 @@ st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-/* Ocultar elementos nativos innecesarios pero mantener el stHeader transparente para que el botón del sidebar sea visible */
+/* Ocultar elementos nativos innecesarios pero mantener el stHeader transparente */
 #MainMenu {{visibility: hidden;}}
 footer {{visibility: hidden;}}
 [data-testid="stHeader"] {{
     background-color: transparent !important;
     box-shadow: none !important;
 }}
-[data-testid="stHeader"] * {{
-    color: #B71C1C !important;
-    fill: #B71C1C !important;
-}}
 [data-testid="stToolbar"] {{visibility: hidden;}}
 
-/* Botón flotante para expandir el sidebar (Asegura visibilidad y clicabilidad de la flecha) */
-button[data-testid*="SidebarCollapse"],
-div[data-testid="collapsedSidebarHashes"] button {{
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    background-color: #B71C1C !important;
-    color: #FFFFFF !important;
-    border-radius: 50% !important;
-    padding: 6px !important;
-    position: fixed !important;
-    top: 12px !important;
-    left: 15px !important;
-    z-index: 999999 !important;
-    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.4) !important;
-    width: 38px !important;
-    height: 38px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border: 1px solid #B71C1C !important;
-}}
-
-/* Pintar la flecha interna de color blanco para contraste */
-button[data-testid*="SidebarCollapse"] svg,
-div[data-testid="collapsedSidebarHashes"] button svg {{
-    fill: #FFFFFF !important;
-    color: #FFFFFF !important;
+/* Forzar que el sidebar esté permanentemente abierto en pantallas de escritorio */
+@media (min-width: 768px) {{
+    [data-testid="stSidebar"] {{
+        transform: none !important;
+        width: 240px !important;
+        min-width: 240px !important;
+        max-width: 240px !important;
+        display: block !important;
+    }}
+    
+    /* Mover el contenido principal para hacer espacio al sidebar permanente */
+    .main {{
+        margin-left: 240px !important;
+        width: calc(100% - 240px) !important;
+    }}
+    
+    /* Ocultar los botones de abrir/cerrar del sidebar ya que es permanente */
+    button[data-testid*="SidebarCollapse"],
+    div[data-testid="collapsedSidebarHashes"] button {{
+        display: none !important;
+    }}
 }}
 
 /* Ajustar paddings de la pantalla principal */
