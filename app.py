@@ -1,6 +1,8 @@
 import streamlit as st
 from components.tab_alerts import render_tab_alerts
 from components.tab_analytics import render_tab_analytics
+from components.tab_suppliers import render_tab_suppliers
+from components.tab_chat import render_tab_chat
 
 # Configuración de página con título e ícono
 st.set_page_config(
@@ -15,9 +17,10 @@ st.markdown("<p style='text-align: center; color: gray;'>Sistema Inteligente de 
 st.markdown("---")
 
 # Estructura de pestañas para soportar múltiples fases del proyecto
-tab_alerts, tab_projections, tab_chat = st.tabs([
+tab_alerts, tab_projections, tab_suppliers, tab_chat = st.tabs([
     "📋 Resumen y Alertas", 
     "📈 Proyecciones de Consumo", 
+    "📦 Pedidos por Proveedor",
     "💬 Asistente IA"
 ])
 
@@ -27,6 +30,8 @@ with tab_alerts:
 with tab_projections:
     render_tab_analytics()
     
+with tab_suppliers:
+    render_tab_suppliers()
+    
 with tab_chat:
-    st.subheader("💬 Asistente de Compras Inteligente")
-    st.info("Esta pestaña se habilitará en la siguiente fase para chatear con los datos mediante IA.")
+    render_tab_chat()
