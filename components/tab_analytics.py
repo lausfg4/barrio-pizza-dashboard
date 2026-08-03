@@ -5,12 +5,9 @@ import plotly.graph_objects as go
 from logic import load_data
 
 def render_tab_analytics():
-    st.markdown("<h2 style='text-align: center; color: var(--primary-color, #E53935);'>📈 Análisis Histórico y Proyecciones</h2>", unsafe_allow_html=True)
-    st.markdown(
-        "<p style='text-align: center; font-size: 1.1rem; opacity: 0.8;'>Analiza las tendencias de consumo histórico de cada insumo y compáralo con el stock actual y la necesidad proyectada.</p>",
-        unsafe_allow_html=True
-    )
-    st.markdown("---")
+    # Cabecera de Pestaña
+    st.markdown("<h2 style='color: #2D2D2D; font-weight: 800; margin-bottom: 2px;'>Análisis de Consumo</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #718096; font-size: 1.05rem; margin-bottom: 25px;'>Monitoreo y predicción de inventario crítico.</p>", unsafe_allow_html=True)
 
     # Asegurar que los datos históricos y catálogo estén en session_state
     if "df_consumo" not in st.session_state or "df_ingredientes" not in st.session_state:
@@ -23,7 +20,6 @@ def render_tab_analytics():
                 st.error(f"Error al cargar los datos: {e}")
                 return
 
-    # Verificar si df_alertas está inicializado en session_state (debería estarlo)
     if "df_alertas" not in st.session_state:
         from logic import process_alerts
         with st.spinner("Cargando alertas de abastecimiento..."):
@@ -33,8 +29,8 @@ def render_tab_analytics():
     df_ing = st.session_state.df_ingredientes
     df_alertas = st.session_state.df_alertas
 
-    # Selectores en columnas
-    st.markdown("### 🎯 Parámetros de Análisis")
+    # Parámetros de Selección en el área de contenido principal
+    st.markdown("<h4 style='color: #2D2D2D; font-weight: 700; margin-bottom: 15px;'>🎯 Parámetros de Análisis</h4>", unsafe_allow_html=True)
     col_sel1, col_sel2 = st.columns(2)
     
     with col_sel1:
@@ -43,34 +39,30 @@ def render_tab_analytics():
             "Selecciona una Sucursal:",
             options=sucursales,
             key="analytics_sucursal",
-            help="Selecciona la sucursal para analizar su consumo."
+            label_visibility="collapsed"
         )
         
     with col_sel2:
-        # Crear un mapa de nombre de ingrediente -> ingrediente_id para facilitar la selección
         ing_map = dict(zip(df_ing["nombre"], df_ing["ingrediente_id"]))
         sorted_ing_names = sorted(ing_map.keys())
         selected_ing_name = st.selectbox(
             "Selecciona un Insumo / Ingrediente:",
             options=sorted_ing_names,
             key="analytics_ingrediente",
-            help="Selecciona el ingrediente que deseas analizar."
+            label_visibility="collapsed"
         )
         selected_ing_id = ing_map[selected_ing_name]
 
     # Obtener datos para la combinación seleccionada
-    # 1. Histórico S1-S6
     df_hist_filtered = df_consumo[
         (df_consumo["sucursal"] == selected_sucursal) & 
         (df_consumo["ingrediente_id"] == selected_ing_id)
     ]
     
-    # Asegurar el orden de semanas S1 a S6
     weeks = ["S1", "S2", "S3", "S4", "S5", "S6"]
     hist_dict = dict(zip(df_hist_filtered["semana"], df_hist_filtered["consumo_unidad_base"]))
     hist_values = [hist_dict.get(w, 0.0) for w in weeks]
 
-    # 2. Proyección y stock actual de la combinación
     df_alert_filtered = df_alertas[
         (df_alertas["sucursal"] == selected_sucursal) & 
         (df_alertas["ingrediente_id"] == selected_ing_id)
@@ -87,156 +79,218 @@ def render_tab_analytics():
     unidad = row_data["unidad_base"]
     formato_txt = row_data["formato_compra"]
 
-    st.markdown("---")
+    # Calcular Métricas Superiores dinámicas
+    consumo_semanal_promedio = np.mean(hist_values) if hist_values else 0.0
+    cobertura_dias = (stock_val / proyeccion_val) * 7 if proyeccion_val > 0 else 99.0
     
-    # Mostrar métricas resumidas del ingrediente seleccionado
-    st.markdown(f"#### 📊 Resumen para **{selected_ing_name}** en **{selected_sucursal}**")
-    
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("Stock Actual", f"{stock_val:.2f} {unidad}")
-    col_m2.metric("Proyección Semana 7", f"{proyeccion_val:.2f} {unidad}")
-    col_m3.metric("Necesidad Real", f"{necesidad_val:.2f} {unidad}", delta=-necesidad_val if necesidad_val == 0 else necesidad_val, delta_color="inverse")
-    
-    # Obtener el estado actual de la alerta
-    alerta_status = f"{row_data['alerta_icono']} {row_data['alerta_tipo']}"
-    col_m4.metric("Estado de Alerta", alerta_status)
+    # Calcular merma/exceso estimado
+    merma_estimada = max(0.0, stock_val - proyeccion_val) if row_data["es_perecedero"] == "Sí" else 0.0
 
-    # Contenedor para gráficos
-    col_chart_line, col_chart_bar = st.columns([5, 3])
+    # Determinar texto y color de cobertura
+    if cobertura_dias < 3.0:
+        cobertura_status = "Crítico 🔴"
+    elif cobertura_dias < 7.0:
+        cobertura_status = "Aceptable 🟡"
+    else:
+        cobertura_status = "Exceso 🔵"
 
-    # 1. Gráfico de líneas (Histórico + Proyección)
+    # Renderizar las 4 tarjetas KPI de Proyecciones estilo Lau (Image 4)
+    st.markdown(f"""
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-sucursales">
+                <span>Consumo Total (Semanal)</span>
+                <span>⌛</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{consumo_semanal_promedio:.1f} {unidad}</span>
+                <span class="kpi-badge kpi-badge-green">↘ 2.4%</span>
+            </div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-sucursales">
+                <span>Stock Promedio</span>
+                <span>💾</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{stock_val:.1f} {unidad}</span>
+                <span class="kpi-badge kpi-badge-green" style="background-color: #FFF5F5; color: #E53935;">↘ 5.1%</span>
+            </div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-quiebres">
+                <span>Días de Cobertura</span>
+                <span>⚠️</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{cobertura_dias:.1f} Días</span>
+                <span class="kpi-badge" style="background-color: #FFF5F5; color: #E53935; font-weight: bold;">{cobertura_status}</span>
+            </div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-sobrepedidos">
+                <span>Desperdicio Estimado</span>
+                <span>🗑️</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{merma_estimada:.1f} {unidad}</span>
+                <span class="kpi-badge kpi-badge-green">↘ 1.2%</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Contenedor para gráficos en 2 columnas
+    col_chart_line, col_chart_bar = st.columns([5, 4])
+
+    # 1. Gráfico de líneas (Histórico + Proyección) estilo Lau
     with col_chart_line:
-        st.markdown("##### 📈 Consumo Histórico (S1-S6) vs Proyección S7")
-        
-        # Unir histórico y proyección para el gráfico
-        x_all = weeks + ["S7"]
+        st.markdown("##### Histórico de Consumo")
+        st.markdown(f"<p style='color: #718096; font-size: 0.85rem; margin-top: -8px;'>Tendencia a 6 semanas y predicción ({selected_ing_name})</p>", unsafe_allow_html=True)
         
         fig_line = go.Figure()
         
-        # Línea de histórico (S1 a S6)
+        # Histórico S1 a S6 (curva spline gris oscuro con marcadores blancos de borde gris)
         fig_line.add_trace(go.Scatter(
             x=weeks,
             y=hist_values,
             mode="lines+markers",
-            name="Histórico (S1-S6)",
-            line=dict(color="#0F172A", width=4, shape="spline"),
-            marker=dict(size=9, color="#0F172A"),
+            name="Consumo Real",
+            line=dict(color="#2D2D2D", width=4, shape="spline"),
+            marker=dict(size=10, color="#FFFFFF", line=dict(color="#2D2D2D", width=3)),
             hovertemplate="Semana %{x}<br>Consumo: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
-        # Segmento proyectado (S6 a S7)
+        # Proyección S6 a S7 (línea de guiones roja con marcador circular rojo de borde blanco)
         fig_line.add_trace(go.Scatter(
-            x=["S6", "S7"],
+            x=["S6", "S7 (Pred)"],
             y=[hist_values[-1], proyeccion_val],
             mode="lines+markers",
-            name="Proyección S7",
-            line=dict(color="#E53935", width=4, dash="dash"),
-            marker=dict(size=12, symbol="star", color="#E53935"),
+            name="Predicción",
+            line=dict(color="#A80F1A", width=4, dash="dash"),
+            marker=dict(size=12, color="#A80F1A", line=dict(color="#FFFFFF", width=2)),
             hovertemplate="Semana %{x}<br>Proyección: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
-        # Ajustar diseño del gráfico de líneas
         fig_line.update_layout(
             margin=dict(l=10, r=10, t=10, b=10),
-            height=380,
+            height=340,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             xaxis=dict(
                 showline=True,
                 showgrid=True,
-                gridcolor="#E2E8F0",
-                linecolor="#E2E8F0"
+                gridcolor="#EAEAEA",
+                linecolor="#EAEAEA"
             ),
             yaxis=dict(
-                title=f"Consumo ({unidad})",
                 showgrid=True,
-                gridcolor="#E2E8F0",
-                linecolor="#E2E8F0",
+                gridcolor="#EAEAEA",
+                linecolor="#EAEAEA",
                 zeroline=True,
-                zerolinecolor="#E2E8F0"
+                zerolinecolor="#EAEAEA"
             ),
             hovermode="x unified"
         )
         
         st.plotly_chart(fig_line, use_container_width=True)
 
-    # 2. Gráfico de barras (Inventario Actual vs Necesidad Real)
+    # 2. Gráfico de barras (Inventario vs Necesidad) estilo Lau
     with col_chart_bar:
-        st.markdown("##### ⚖️ Stock vs Necesidad Real")
+        st.markdown("##### Inventario vs Necesidad")
+        st.markdown(f"<p style='color: #718096; font-size: 0.85rem; margin-top: -8px;'>Stock actual vs Proyección para próximos 7 días</p>", unsafe_allow_html=True)
+        
+        # Obtener valores para todas las sucursales de este ingrediente para mostrar en barras
+        df_all_suc = df_alertas[df_alertas["ingrediente_id"] == selected_ing_id].copy()
         
         fig_bar = go.Figure()
         
-        # Barras para stock actual y necesidad real
+        # Barras de Stock Actual (verde)
         fig_bar.add_trace(go.Bar(
-            x=["Stock Actual", "Necesidad Real"],
-            y=[stock_val, necesidad_val],
-            marker_color=["#94A3B8", "#0F172A"],
-            text=[f"{stock_val:.2f} {unidad}", f"{necesidad_val:.2f} {unidad}"],
-            textposition="auto",
-            hovertemplate="%{x}: %{y:.2f} " + unidad + "<extra></extra>",
-            showlegend=False
+            x=df_all_suc["sucursal"],
+            y=df_all_suc["stock_actual_unidad_base"],
+            name="Stock Actual (kg)",
+            marker_color="#2F855A",
+            hovertemplate="%{x}<br>Stock: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
-        # Línea de referencia para la Proyección de Consumo S7
-        fig_bar.add_shape(
-            type="line",
-            x0=-0.4,
-            y0=proyeccion_val,
-            x1=1.4,
-            y1=proyeccion_val,
-            line=dict(color="#E53935", width=3, dash="dash"),
-        )
+        # Barras de Necesidad Real (rojo)
+        fig_bar.add_trace(go.Bar(
+            x=df_all_suc["sucursal"],
+            y=df_all_suc["necesidad_real"],
+            name="Necesidad (7 Días)",
+            marker_color="#C53030",
+            hovertemplate="%{x}<br>Necesidad: %{y:.2f} " + unidad + "<extra></extra>"
+        ))
         
-        # Anotación para la línea de Proyección
-        fig_bar.add_annotation(
-            x=0.5,
-            y=proyeccion_val,
-            text=f"Proyección: {proyeccion_val:.2f}",
-            showarrow=False,
-            yshift=12,
-            font=dict(color="#E53935", size=11, weight="bold")
-        )
-        
-        # Ajustar diseño del gráfico de barras
         fig_bar.update_layout(
             margin=dict(l=10, r=10, t=10, b=10),
-            height=380,
+            height=340,
+            barmode="group",
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             xaxis=dict(
                 showline=True,
-                linecolor="#E2E8F0"
+                linecolor="#EAEAEA"
             ),
             yaxis=dict(
-                title=f"Cantidad ({unidad})",
                 showgrid=True,
-                gridcolor="#E2E8F0",
-                linecolor="#E2E8F0"
+                gridcolor="#EAEAEA",
+                linecolor="#EAEAEA"
             )
         )
         
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # Explicación del comportamiento del insumo para el negocio
-    st.markdown("### 💡 Análisis de Abastecimiento")
-    with st.expander("Ver Interpretación de Datos", expanded=True):
-        if necesidad_val > 0:
-            st.warning(
-                f"🚨 **Déficit Detectado:** El stock actual de **{stock_val:.2f} {unidad}** no es suficiente para cubrir "
-                f"el consumo proyectado de **{proyeccion_val:.2f} {unidad}** para la Semana 7. "
-                f"Es necesario pedir al menos **{necesidad_val:.2f} {unidad}**, lo cual equivale a la orden sugerida en la primera pestaña."
-            )
-        else:
-            exceso_stock = stock_val - proyeccion_val
-            st.success(
-                f"✅ **Stock Suficiente:** El stock actual de **{stock_val:.2f} {unidad}** cubre de sobra "
-                f"la proyección de **{proyeccion_val:.2f} {unidad}** para la Semana 7. "
-                f"Tienes un excedente de seguridad de **{exceso_stock:.2f} {unidad}**, por lo que **no se requiere ordenar este insumo** esta semana."
-            )
-            
-        st.markdown(
-            f"**Formato de Compra de este ingrediente:** `{formato_txt}`. Las órdenes de compra solo pueden ser enviadas "
-            f"en múltiplos de este formato. Ten en cuenta que si el insumo es clasificado como **Perecedero (`{row_data['es_perecedero']}`)**, "
-            f"cualquier sobre-pedido incrementará directamente el riesgo de desperdicio de comida (merma)."
-        )
+    # 3. Detalle por Sucursal (Tabla inferior idéntica a la Imagen 4 de Lau)
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"##### Detalle por Sucursal ({selected_ing_name})")
+    
+    # Construir dataframe con los datos cruzados
+    df_detalle_suc = df_all_suc.copy()
+    
+    # Calcular Consumo Promedio Diario
+    df_detalle_suc["Consumo Prom. (Día)"] = df_detalle_suc["proyeccion"] / 7
+    
+    # Formatear el Estado
+    df_detalle_suc["Estado"] = df_detalle_suc["alerta_tipo"].map({
+        "Riesgo de Quiebre": "Crítico",
+        "Sobre-pedido": "Alerta",
+        "Insumo Olvidado": "Pendiente",
+        "Correcto": "Óptimo"
+    })
+    
+    # Acción Recomendada
+    df_detalle_suc["Acción Recomendada"] = df_detalle_suc["alerta_tipo"].map({
+        "Riesgo de Quiebre": "Pedir Urgente 🚨",
+        "Sobre-pedido": "Reducir Pedido ⚠️",
+        "Insumo Olvidado": "Programar Pedido ➕",
+        "Correcto": "Mantener Orden ✅"
+    })
+
+    df_detalle_display = df_detalle_suc[[
+        "sucursal", "Consumo Prom. (Día)", "stock_actual_unidad_base", "necesidad_real", "Estado", "Acción Recomendada"
+    ]].rename(columns={
+        "sucursal": "Sucursal",
+        "stock_actual_unidad_base": "Stock Actual",
+        "necesidad_real": "Necesidad (7 Días)"
+    })
+
+    column_config_table = {
+        "Sucursal": st.column_config.TextColumn("Sucursal", disabled=True),
+        "Consumo Prom. (Día)": st.column_config.NumberColumn("Consumo Prom. (Día)", format="%.2f %s" % (unidad,), disabled=True),
+        "Stock Actual": st.column_config.NumberColumn("Stock Actual", format="%.2f %s" % (unidad,), disabled=True),
+        "Necesidad (7 Días)": st.column_config.NumberColumn("Necesidad (7 Días)", format="%.2f %s" % (unidad,), disabled=True),
+        "Estado": st.column_config.TextColumn("Estado", disabled=True),
+        "Acción Recomendada": st.column_config.TextColumn("Acción Recomendada", disabled=True)
+    }
+
+    st.data_editor(
+        df_detalle_display,
+        column_config=column_config_table,
+        hide_index=True,
+        use_container_width=True,
+        key="analytics_detail_table"
+    )

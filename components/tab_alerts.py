@@ -4,184 +4,233 @@ import numpy as np
 from logic import recalculate_alerts, process_alerts
 
 def render_tab_alerts():
-    st.markdown("<h2 style='text-align: center; color: var(--primary-color, #E53935);'>🍕 Panel de Resumen y Alertas</h2>", unsafe_allow_html=True)
-    st.markdown(
-        "<p style='text-align: center; font-size: 1.1rem; opacity: 0.8;'>Visualiza alertas críticas de abastecimiento y corrige las órdenes en tiempo real para optimizar la compra de insumos.</p>",
-        unsafe_allow_html=True
-    )
+    # Títulos estilizados estilo Lau
+    st.markdown("<h2 style='color: #2D2D2D; font-weight: 800; margin-bottom: 2px;'>Resumen & Alertas</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #718096; font-size: 1.05rem; margin-bottom: 25px;'>Semana 7 — Revisión Automática de Insumos</p>", unsafe_allow_html=True)
     
     # Inicialización del estado de sesión si no existe
     if "df_alertas" not in st.session_state:
         with st.spinner("Procesando datos y alertas iniciales..."):
             st.session_state.df_alertas = process_alerts("datos")
             
-    # Filtros en columnas para organizar el dashboard sin saturar la barra lateral
-    st.markdown("### 🔍 Filtros de Visualización")
-    sucursales_disp = sorted(st.session_state.df_alertas["sucursal"].unique())
-    alertas_disp = ["Riesgo de Quiebre", "Sobre-pedido", "Insumo Olvidado", "Correcto"]
-    
-    col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
-    with col_f1:
-        selected_sucursales = st.multiselect(
-            "Sucursales:",
-            options=sucursales_disp,
-            default=sucursales_disp,
-            help="Selecciona qué sucursales mostrar en el dashboard."
-        )
-    with col_f2:
-        selected_alertas = st.multiselect(
-            "Tipos de Alerta:",
-            options=alertas_disp,
-            default=alertas_disp,
-            help="Filtra por el tipo de alerta de abastecimiento."
-        )
-    with col_f3:
-        st.write("")  # Espaciador
-        st.write("")  # Espaciador
-        if st.button("Restablecer Valores 🔄", use_container_width=True, help="Vuelve a cargar los datos originales de las órdenes de compra."):
-            st.session_state.df_alertas = process_alerts("datos")
-            st.toast("Órdenes restablecidas a sus valores originales.", icon="🔄")
-            st.rerun()
+    df_alertas = st.session_state.df_alertas
 
-    # Si no hay filtros seleccionados, mostramos una advertencia
-    if not selected_sucursales or not selected_alertas:
-        st.warning("⚠️ Selecciona al menos una Sucursal y un Tipo de Alerta para visualizar las métricas y la tabla.")
-        return
+    # Calcular estadísticas globales para las tarjetas KPI
+    quiebres_global = df_alertas[df_alertas["alerta_tipo"] == "Riesgo de Quiebre"].shape[0]
+    sobrepedidos_global = df_alertas[df_alertas["alerta_tipo"] == "Sobre-pedido"].shape[0]
+    olvidados_global = df_alertas[df_alertas["alerta_tipo"] == "Insumo Olvidado"].shape[0]
+    tot_sucursales_global = df_alertas["sucursal"].nunique()
 
-    # Filtrar datos de la sesión
-    df_filtered = st.session_state.df_alertas[
-        (st.session_state.df_alertas["sucursal"].isin(selected_sucursales)) &
-        (st.session_state.df_alertas["alerta_tipo"].isin(selected_alertas))
-    ]
-
-    # Calcular Métricas (KPI Cards)
-    tot_sucursales = df_filtered["sucursal"].nunique()
-    quiebres = df_filtered[df_filtered["alerta_tipo"] == "Riesgo de Quiebre"].shape[0]
-    sobrepedidos = df_filtered[df_filtered["alerta_tipo"] == "Sobre-pedido"].shape[0]
-    olvidados = df_filtered[df_filtered["alerta_tipo"] == "Insumo Olvidado"].shape[0]
-
-    # Renderizar KPI Cards con CSS Premium (adaptable a Light/Dark Mode)
+    # Renderizar KPI Cards con contorno fino estilo Lau
     st.markdown(f"""
     <style>
-    .kpi-container {{
+    .kpi-grid {{
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 15px;
-        margin-bottom: 25px;
-        margin-top: 15px;
+        gap: 20px;
+        margin-bottom: 30px;
     }}
-    .kpi-card {{
+    .kpi-box {{
         background-color: #FFFFFF;
         border-radius: 16px;
-        padding: 15px 20px;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        border-left: 6px solid #ccc;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        transition: transform 0.2s, box-shadow 0.2s;
+        padding: 20px 24px;
+        border: 1px solid #EAEAEA;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.01);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 125px;
     }}
-    .kpi-card:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
-    }}
-    .kpi-card.sucursales {{ border-left-color: #9c27b0; }}
-    .kpi-card.quiebres {{ border-left-color: #dc3545; }}
-    .kpi-card.sobrepedidos {{ border-left-color: #ffc107; }}
-    .kpi-card.olvidados {{ border-left-color: #0d6efd; }}
-    
-    .kpi-label {{
-        font-size: 0.82rem;
-        color: #64748B;
-        font-weight: 600;
-        margin-bottom: 5px;
+    .kpi-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }}
-    .kpi-value {{
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: #0F172A;
+    .kpi-title-sucursales {{ color: #718096; }}
+    .kpi-title-quiebres {{ color: #E53935; }}
+    .kpi-title-sobrepedidos {{ color: #DD6B20; }}
+    .kpi-title-olvidados {{ color: #3182CE; }}
+    
+    .kpi-body {{
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: baseline;
+        margin-top: 15px;
     }}
-    .kpi-icon {{
+    .kpi-num {{
         font-size: 2rem;
+        font-weight: 800;
+        color: #2D2D2D;
+        line-height: 1;
+    }}
+    .kpi-badge {{
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 20px;
+    }}
+    .kpi-badge-green {{
+        background-color: #E6FFFA;
+        color: #319795;
+    }}
+    .kpi-badge-red-link {{
+        color: #A80F1A;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-decoration: underline;
+        cursor: pointer;
     }}
     </style>
-    <div class="kpi-container">
-        <div class="kpi-card sucursales">
-            <div class="kpi-label">Sucursales Filtradas</div>
-            <div class="kpi-value">
-                <span>{tot_sucursales}</span>
-                <span class="kpi-icon">🏢</span>
+    
+    <div class="kpi-grid">
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-sucursales">
+                <span>Total Sucursales</span>
+                <span>🏢</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{tot_sucursales_global} Active</span>
+                <span class="kpi-badge kpi-badge-green">↗ 100%</span>
             </div>
         </div>
-        <div class="kpi-card quiebres">
-            <div class="kpi-label">Riesgo de Quiebre</div>
-            <div class="kpi-value">
-                <span>{quiebres}</span>
-                <span class="kpi-icon">🔴</span>
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-quiebres">
+                <span>🔴 Stock Crítico</span>
+                <span>⚠️</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{quiebres_global} items</span>
+                <span class="kpi-badge-red-link">Ver Detalle</span>
             </div>
         </div>
-        <div class="kpi-card sobrepedidos">
-            <div class="kpi-label">Sobre-pedidos</div>
-            <div class="kpi-value">
-                <span>{sobrepedidos}</span>
-                <span class="kpi-icon">🟡</span>
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-sobrepedidos">
+                <span>🟡 Sobre-pedidos</span>
+                <span>📦</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{sobrepedidos_global} items</span>
+                <span style='color: #718096; font-size: 0.8rem; font-weight: 500;'>Analizado</span>
             </div>
         </div>
-        <div class="kpi-card olvidados">
-            <div class="kpi-label">Insumos Olvidados</div>
-            <div class="kpi-value">
-                <span>{olvidados}</span>
-                <span class="kpi-icon">🔵</span>
+        <div class="kpi-box">
+            <div class="kpi-header kpi-title-olvidados">
+                <span>🔵 Insumos Olvidados</span>
+                <span>📋</span>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-num">{olvidados_global} items</span>
+                <span style='color: #718096; font-size: 0.8rem; font-weight: 500;'>Pendiente</span>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Contenedor para el editor interactivo de órdenes
-    st.markdown("### ✏️ Corrección de Órdenes en Tiempo Real")
-    st.markdown(
-        "Modifica el valor en la columna **'Cantidad Pedida (Formatos)'** para los insumos en riesgo. Las alertas se recalcularán de inmediato."
-    )
+    # Contenedor de Filtros (Estilo Lau)
+    st.markdown("<h4 style='color: #2D2D2D; font-weight: 700; margin-bottom: 15px;'>Filtros de Búsqueda</h4>", unsafe_allow_html=True)
+    sucursales_disp = sorted(df_alertas["sucursal"].unique())
     
-    display_cols = [
-        "alerta_icono", "sucursal", "nombre", "es_perecedero", 
-        "proyeccion", "stock_actual_unidad_base", "necesidad_real", 
-        "cantidad_formatos", "formato_compra", "pedido_unidad_base", "alerta_mensaje"
-    ]
+    col_filter1, col_filter2 = st.columns([1, 2])
+    with col_filter1:
+        # Selector de Sucursales
+        selected_sucursal_opt = st.selectbox(
+            "Sucursales:",
+            options=["Todas las Sucursales"] + sucursales_disp,
+            index=0,
+            label_visibility="collapsed"
+        )
+    with col_filter2:
+        # Selector de Píldoras de Alerta
+        selected_pill = st.radio(
+            "Filtro de Alerta:",
+            options=["Todos", "🔴 Crítico", "🟡 Exceso", "🔵 Olvido"],
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+
+    # Filtrar según la Sucursal seleccionada
+    if selected_sucursal_opt == "Todas las Sucursales":
+        df_filtered = df_alertas.copy()
+    else:
+        df_filtered = df_alertas[df_alertas["sucursal"] == selected_sucursal_opt].copy()
+
+    # Filtrar según la Píldora de Alerta seleccionada
+    if selected_pill == "🔴 Crítico":
+        df_filtered = df_filtered[df_filtered["alerta_tipo"] == "Riesgo de Quiebre"]
+    elif selected_pill == "🟡 Exceso":
+        df_filtered = df_filtered[df_filtered["alerta_tipo"] == "Sobre-pedido"]
+    elif selected_pill == "🔵 Olvido":
+        df_filtered = df_filtered[df_filtered["alerta_tipo"] == "Insumo Olvidado"]
+
+    # Mostrar la tabla interactiva
+    st.markdown("<br>", unsafe_allow_html=True)
     
+    # Preparar el dataframe mapeando los nombres de columna y los textos de estado
+    df_to_display = df_filtered.copy()
+    
+    # Mapear estados a textos visuales elegantes
+    df_to_display["Estado"] = df_to_display["alerta_tipo"].map({
+        "Riesgo de Quiebre": "CRÍTICO",
+        "Sobre-pedido": "EXCESO",
+        "Insumo Olvidado": "OLVIDO",
+        "Correcto": "OK"
+    })
+
+    # Renombrar columnas para la visualización exacta de la tabla de Lau
+    df_to_display = df_to_display[[
+        "sucursal", "nombre", "stock_actual_unidad_base", "proyeccion", 
+        "necesidad_real", "cantidad_formatos", "Estado", "alerta_mensaje"
+    ]].rename(columns={
+        "sucursal": "Sucursal",
+        "nombre": "Ingrediente",
+        "stock_actual_unidad_base": "Stock Actual",
+        "proyeccion": "Proyección",
+        "necesidad_real": "Nec. Real",
+        "cantidad_formatos": "Cant. Pedido (Formatos)",
+        "alerta_mensaje": "Acción"
+    })
+
     column_config = {
-        "alerta_icono": st.column_config.TextColumn("Alerta", width="small", help="Estado de alerta"),
-        "sucursal": st.column_config.TextColumn("Sucursal", disabled=True),
-        "nombre": st.column_config.TextColumn("Ingrediente", disabled=True),
-        "es_perecedero": st.column_config.TextColumn("Perecedero", disabled=True),
-        "proyeccion": st.column_config.NumberColumn("Proyección (Unidad)", format="%.2f", disabled=True),
-        "stock_actual_unidad_base": st.column_config.NumberColumn("Stock", format="%.2f", disabled=True),
-        "necesidad_real": st.column_config.NumberColumn("Necesidad Real", format="%.2f", disabled=True, help="Proyección de consumo - Stock actual"),
-        "cantidad_formatos": st.column_config.NumberColumn("Cantidad Pedida (Formatos)", min_value=0.0, step=1.0, format="%.0f"),
-        "formato_compra": st.column_config.TextColumn("Formato Compra", disabled=True),
-        "pedido_unidad_base": st.column_config.NumberColumn("Pedido (Unidades)", format="%.2f", disabled=True),
-        "alerta_mensaje": st.column_config.TextColumn("Detalle de Alerta", disabled=True, width="large"),
+        "Sucursal": st.column_config.TextColumn("Sucursal", disabled=True),
+        "Ingrediente": st.column_config.TextColumn("Ingrediente", disabled=True),
+        "Stock Actual": st.column_config.NumberColumn("Stock Actual", format="%.2f", disabled=True),
+        "Proyección": st.column_config.NumberColumn("Proyección", format="%.2f", disabled=True),
+        "Nec. Real": st.column_config.NumberColumn("Nec. Real", format="%.2f", disabled=True),
+        "Cant. Pedido (Formatos)": st.column_config.NumberColumn("Cant. Pedido", min_value=0.0, step=1.0, format="%.0f"),
+        "Estado": st.column_config.TextColumn("Estado", disabled=True),
+        "Acción": st.column_config.TextColumn("Acción Recomendada", disabled=True, width="large")
     }
-    
-    df_to_edit = df_filtered[display_cols].copy()
-    
-    df_edited_filtered = st.data_editor(
-        df_to_edit,
+
+    df_edited = st.data_editor(
+        df_to_display,
         column_config=column_config,
         hide_index=True,
         use_container_width=True,
         key="alerts_editor"
     )
-    
-    # Si detectamos que el usuario cambió los formatos de pedido
-    if not df_edited_filtered["cantidad_formatos"].equals(df_filtered["cantidad_formatos"]):
-        # Actualizamos en el session state los renglones editados
-        st.session_state.df_alertas.loc[df_edited_filtered.index, "cantidad_formatos"] = df_edited_filtered["cantidad_formatos"]
-        
-        # Recalculamos las alertas globales utilizando la lógica modificada
+
+    # Si detectamos que el usuario cambió las cantidades pedidas
+    if not df_edited["Cant. Pedido (Formatos)"].equals(df_to_display["Cant. Pedido (Formatos)"]):
+        # Mapear los cambios de regreso al DataFrame de sesión de Streamlit usando el índice de fila original
+        for i, row in df_edited.iterrows():
+            suc_val = row["Sucursal"]
+            ing_val = row["Ingrediente"]
+            new_val = row["Cant. Pedido (Formatos)"]
+            
+            # Buscar la fila correspondiente en el df global de sesión
+            idx = df_alertas[
+                (df_alertas["sucursal"] == suc_val) & 
+                (df_alertas["nombre"] == ing_val)
+            ].index
+            
+            if not idx.empty:
+                st.session_state.df_alertas.loc[idx[0], "cantidad_formatos"] = new_val
+
+        # Recalcular las alertas globales utilizando la lógica de negocio
         st.session_state.df_alertas = recalculate_alerts(st.session_state.df_alertas)
-        st.toast("¡Pedido modificado y alertas actualizadas!", icon="✅")
+        st.toast("¡Pedido modificado y alertas recalculadas en tiempo real!", icon="✅")
         st.rerun()
