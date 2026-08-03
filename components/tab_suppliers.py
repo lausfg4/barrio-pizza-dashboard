@@ -52,14 +52,11 @@ def render_tab_suppliers():
             total_cost += subtotal
             
             items_data.append({
-                "CÓDIGO": code,
-                "DESCRIPCIÓN": f"{name} ({formato})",
-                "CANTIDAD": f"{qty:.0f} unid.",
-                "PRECIO UNIT.": f"${price_unit:.2f}",
-                "SUBTOTAL": f"${subtotal:.2f}",
-                # Datos crudos para exportación
-                "raw_price": price_unit,
-                "raw_subtotal": subtotal
+                "Código": code,
+                "Descripción": f"{name} ({formato})",
+                "Cantidad": f"{qty:.0f} unid.",
+                "Precio Unitario": f"${price_unit:.2f}",
+                "Subtotal": f"${subtotal:.2f}"
             })
             
         df_prov_display = pd.DataFrame(items_data)
@@ -67,13 +64,13 @@ def render_tab_suppliers():
         # Asignar un estado de entrega y número de orden ficticios para coincidir con la imagen 3
         order_num = f"#ORD-2026-44{idx+1}"
         if idx % 3 == 0:
-            status_txt = "🔴 Pendiente de Confirmación"
+            status_txt = "Pendiente de Confirmación"
             delivery_txt = "Entrega estimada: Mañana"
         elif idx % 3 == 1:
-            status_txt = "🟢 Confirmada"
+            status_txt = "Confirmada"
             delivery_txt = "Entrega estimada: Jueves"
         else:
-            status_txt = "🔵 En Camino"
+            status_txt = "En Camino"
             delivery_txt = "Entrega estimada: Hoy"
             
         # Título del expander
@@ -82,7 +79,7 @@ def render_tab_suppliers():
         with st.expander(expander_title):
             # Mostrar la tabla formateada como en la imagen
             st.dataframe(
-                df_prov_display[["CÓDIGO", "DESCRIPCIÓN", "CANTIDAD", "PRECIO UNIT.", "SUBTOTAL"]],
+                df_prov_display[["Código", "Descripción", "Cantidad", "Precio Unitario", "Subtotal"]],
                 hide_index=True,
                 use_container_width=True
             )
@@ -91,7 +88,7 @@ def render_tab_suppliers():
             col_csv, col_excel, col_total = st.columns([2, 2, 5])
             with col_csv:
                 # Generar datos CSV para exportar
-                df_export = df_prov_display[["CÓDIGO", "DESCRIPCIÓN", "CANTIDAD", "PRECIO UNIT.", "SUBTOTAL"]].copy()
+                df_export = df_prov_display[["Código", "Descripción", "Cantidad", "Precio Unitario", "Subtotal"]].copy()
                 csv_data = df_export.to_csv(index=False).encode('utf-8')
                 
                 st.download_button(
@@ -103,7 +100,6 @@ def render_tab_suppliers():
                     use_container_width=True
                 )
             with col_excel:
-                # Botón de Excel estético
                 st.button("📄 Excel", key=f"btn_excel_{prov.replace(' ', '_').lower()}", use_container_width=True)
                 
             with col_total:
@@ -111,7 +107,7 @@ def render_tab_suppliers():
                 st.markdown(
                     f"<div style='text-align: right; padding-top: 5px;'>"
                     f"<span style='color: #718096; font-size: 0.95rem; font-weight: 600;'>Total Orden: </span>"
-                    f"<span style='color: #A80F1A; font-size: 1.35rem; font-weight: 800;'>${total_cost:,.2f}</span>"
+                    f"<span style='color: #B71C1C; font-size: 1.35rem; font-weight: 800;'>${total_cost:,.2f}</span>"
                     f"</div>",
                     unsafe_allow_html=True
                 )

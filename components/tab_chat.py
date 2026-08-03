@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import os
-from logic import process_alerts
+import re
+from logic import process_alerts, recalculate_alerts
 
 def render_tab_chat():
     st.markdown("<h2 style='color: #2D2D2D; font-weight: 800; margin-bottom: 2px;'>Asistente IA</h2>", unsafe_allow_html=True)
@@ -10,7 +11,7 @@ def render_tab_chat():
         unsafe_allow_html=True
     )
 
-    # Inicializar alertas en session_state si no existen
+    # Inicializar alertas si no existen
     if "df_alertas" not in st.session_state:
         with st.spinner("Cargando datos de alertas..."):
             st.session_state.df_alertas = process_alerts("datos")
@@ -44,19 +45,13 @@ def render_tab_chat():
             st.session_state.user_api_key = user_key
             st.success("¡API Key registrada con éxito para esta sesión! Recargando...")
             st.rerun()
-        else:
-            st.info(
-                "💡 **Consejo:** Para automatizar esto en producción, define la variable de entorno "
-                "`GEMINI_API_KEY` o crea un archivo `.streamlit/secrets.toml` con la propiedad "
-                "`GEMINI_API_KEY = 'tu_clave'`."
-            )
-            return
+        return
 
-    # Inicializar historial de chat en session_state si no existe
+    # Inicializar historial de chat si no existe
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Mostrar sugerencias de preguntas rápidas (Imagen 2 de Lau)
+    # Mostrar sugerencias de preguntas rápidas estilo Lau (Image 2)
     st.markdown("<h5 style='color: #2D2D2D; font-weight: 700; margin-bottom: 12px;'>Sugerencias Rápidas</h5>", unsafe_allow_html=True)
     col_s1, col_s2, col_s3 = st.columns(3)
     if col_s1.button("🏢 ¿Qué sucursal tiene más quiebres?", use_container_width=True, key="sug_quiebres"):
@@ -71,12 +66,79 @@ def render_tab_chat():
     # Contenedor de mensajes de chat
     chat_container = st.container()
 
-    # Mostrar historial de mensajes guardados con avatares estéticos
+    # Mostrar historial de mensajes guardados
     with chat_container:
-        for msg in st.session_state.chat_history:
-            avatar_icon = "🤖" if msg["role"] == "assistant" else "👤"
-            with st.chat_message(msg["role"], avatar=avatar_icon):
-                st.markdown(msg["content"])
+        for idx, msg in enumerate(st.session_state.chat_history):
+            # Usar default avatars de Streamlit para poder capturarlos con el CSS selector
+            with st.chat_message(msg["role"]):
+                content = msg["content"]
+                
+                # Comprobar si el mensaje contiene un borrador estructurado
+                if "[BORRADOR:" in content:
+                    parts = content.split("[BORRADOR:")
+                    text_show = parts[0].strip()
+                    st.markdown(text_show)
+                    
+                    draft_str = parts[1].split("]")[0].strip()
+                    draft_parts = [x.strip() for x in draft_str.split("|")]
+                    
+                    if len(draft_parts) >= 4:
+                        proveedor_d = draft_parts[0]
+                        destino_d = draft_parts[1]
+                        item_d = draft_parts[2]
+                        cantidad_d = draft_parts[3]
+                        
+                        # Renderizar tarjeta interactiva beige/blanca
+                        st.markdown(f"""
+                        <div style='background-color: #FAF8F5; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-top: 15px; margin-bottom: 10px;'>
+                            <div style='display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; margin-bottom: 15px;'>
+                                <span style='font-weight: 800; font-size: 0.85rem; color: #4A5568;'>BORRADOR DE ORDEN</span>
+                                <span style='background-color: #FFEBE9; color: #B71C1C; font-size: 0.75rem; font-weight: bold; padding: 3px 8px; border-radius: 12px;'>Pendiente de Aprobación</span>
+                            </div>
+                            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; margin-bottom: 10px;'>
+                                <div><b style='color: #718096; font-size: 0.75rem;'>Proveedor</b><br><span style='color: #2D2D2D; font-weight: 600;'>{proveedor_d}</span></div>
+                                <div><b style='color: #718096; font-size: 0.75rem;'>Destino</b><br><span style='color: #2D2D2D; font-weight: 600;'>{destino_d}</span></div>
+                                <div style='margin-top: 8px;'><b style='color: #718096; font-size: 0.75rem;'>Ítem</b><br><span style='color: #2D2D2D; font-weight: 600;'>{item_d}</span></div>
+                                <div style='margin-top: 8px;'><b style='color: #718096; font-size: 0.75rem;'>Cantidad</b><br><span style='color: #B71C1C; font-weight: bold;'>{cantidad_d}</span></div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Botones interactivos nativos de Streamlit
+                        col_btn1, col_btn2 = st.columns([3, 1])
+                        with col_btn1:
+                            if st.button("Aprobar Orden ✅", key=f"approve_{idx}"):
+                                try:
+                                    qty_num = float(re.findall(r"[-+]?\d*\.\d+|\d+", cantidad_d)[0])
+                                except Exception:
+                                    qty_num = 1.0
+                                    
+                                destino_clean = destino_d.lower().strip()
+                                item_clean = item_d.lower().strip()
+                                
+                                match_idx = None
+                                for s_idx, s_row in df_alertas.iterrows():
+                                    row_suc = s_row["sucursal"].lower().strip()
+                                    row_ing = s_row["nombre"].lower().strip()
+                                    if (row_suc in destino_clean or destino_clean in row_suc) and (row_ing in item_clean or item_clean in row_ing):
+                                        match_idx = s_idx
+                                        break
+                                        
+                                if match_idx is not None:
+                                    st.session_state.df_alertas.loc[match_idx, "cantidad_formatos"] = qty_num
+                                    st.session_state.df_alertas = recalculate_alerts(st.session_state.df_alertas)
+                                    st.session_state.chat_history.append({
+                                        "role": "assistant",
+                                        "content": f"✅ ¡He registrado tu orden aprobada de **{qty_num:.0f} unidades** de **{item_d}** para **{destino_d}**!"
+                                    })
+                                    st.toast(f"¡Orden para {item_d} aprobada con éxito!", icon="✅")
+                                    st.rerun()
+                                else:
+                                    st.error("No se pudo localizar el ingrediente o sucursal correspondiente en el sistema.")
+                        with col_btn2:
+                            st.button("Modificar", key=f"modify_{idx}")
+                else:
+                    st.markdown(content)
 
     # Leer la entrada del usuario de st.chat_input o capturar del botón de sugerencias
     user_prompt = st.chat_input("Escribe un mensaje al Asistente IA...")
@@ -86,9 +148,8 @@ def render_tab_chat():
         del st.session_state.pending_prompt
 
     if user_prompt:
-        # Mostrar el mensaje del usuario en tiempo real
         with chat_container:
-            with st.chat_message("user", avatar="👤"):
+            with st.chat_message("user"):
                 st.markdown(user_prompt)
         st.session_state.chat_history.append({"role": "user", "content": user_prompt})
 
@@ -97,7 +158,7 @@ def render_tab_chat():
             "sucursal", "nombre", "es_perecedero", "proyeccion", 
             "stock_actual_unidad_base", "necesidad_real", 
             "cantidad_formatos", "formato_compra", "pedido_unidad_base", 
-            "alerta_tipo", "alerta_mensaje"
+            "alerta_tipo", "alerta_mensaje", "proveedor"
         ]]
         context_csv = df_context.to_csv(index=False)
 
@@ -114,7 +175,9 @@ Reglas estrictas para tu comportamiento:
 1. Responde de forma amigable, profesional y estructurada en español. Usa viñetas o negritas de Markdown para que las respuestas sean fáciles de leer de un vistazo.
 2. Basate exclusivamente en los datos del CSV anterior.
 3. Si el usuario pregunta por alertas de quiebre (Riesgo de Quiebre), insumos olvidados (Insumo Olvidado) o sobre-pedidos, responde listando claramente la sucursal, el ingrediente, la cantidad implicada y la acción sugerida.
-4. Si el usuario te hace una pregunta fuera del alcance de estos datos de abastecimiento, indícale de manera cortés que solo posees acceso a los datos de inventario y pedidos de la semana en curso.
+4. Si sugieres o recomiendas hacer una orden de compra para abastecer un insumo crítico, debes incluir al final de tu respuesta una línea con el siguiente formato exacto para que el sistema cree la tarjeta interactiva:
+[BORRADOR: Nombre del Proveedor | Nombre de la Sucursal | Nombre del Insumo | Cantidad en unidades de formato (ej: 9 unidades)]
+5. Si el usuario te hace una pregunta fuera del alcance de estos datos de abastecimiento, indícale de manera cortés que solo posees acceso a los datos de inventario y pedidos de la semana en curso.
         """
 
         # Ejecutar la consulta con el SDK de Google Generative AI
@@ -122,24 +185,21 @@ Reglas estrictas para tu comportamiento:
             import google.generativeai as genai
             genai.configure(api_key=api_key)
             
-            # Configurar el modelo y la instrucción del sistema
             model = genai.GenerativeModel(
                 model_name="gemini-3.5-flash",
                 system_instruction=system_instruction
             )
             
-            # Formatear el historial de chat acumulado para la API de Gemini
             api_history = []
             for m in st.session_state.chat_history[:-1]:
                 role = "user" if m["role"] == "user" else "model"
-                api_history.append({"role": role, "parts": [m["content"]]})
+                clean_content = m["content"].split("[BORRADOR:")[0].strip()
+                api_history.append({"role": role, "parts": [clean_content]})
                 
-            # Establecer sesión de chat
             chat = model.start_chat(history=api_history)  # type: ignore
             
-            # Obtener respuesta del modelo
             with chat_container:
-                with st.chat_message("assistant", avatar="🤖"):
+                with st.chat_message("assistant"):
                     with st.spinner("Analizando pedidos y existencias..."):
                         response = chat.send_message(user_prompt)
                         response_text = response.text

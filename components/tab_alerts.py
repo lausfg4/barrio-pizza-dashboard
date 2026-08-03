@@ -4,7 +4,7 @@ import numpy as np
 from logic import recalculate_alerts, process_alerts
 
 def render_tab_alerts():
-    # Títulos estilizados estilo Lau
+    # Títulos estilizados
     st.markdown("<h2 style='color: #2D2D2D; font-weight: 800; margin-bottom: 2px;'>Resumen & Alertas</h2>", unsafe_allow_html=True)
     st.markdown("<p style='color: #718096; font-size: 1.05rem; margin-bottom: 25px;'>Semana 7 — Revisión Automática de Insumos</p>", unsafe_allow_html=True)
     
@@ -51,7 +51,7 @@ def render_tab_alerts():
         letter-spacing: 0.5px;
     }}
     .kpi-title-sucursales {{ color: #718096; }}
-    .kpi-title-quiebres {{ color: #E53935; }}
+    .kpi-title-quiebres {{ color: #B71C1C; }}
     .kpi-title-sobrepedidos {{ color: #DD6B20; }}
     .kpi-title-olvidados {{ color: #3182CE; }}
     
@@ -78,7 +78,7 @@ def render_tab_alerts():
         color: #319795;
     }}
     .kpi-badge-red-link {{
-        color: #A80F1A;
+        color: #B71C1C;
         font-weight: 600;
         font-size: 0.8rem;
         text-decoration: underline;

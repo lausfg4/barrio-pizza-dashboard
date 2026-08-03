@@ -31,13 +31,13 @@ st.markdown(f"""
 /* Fuente Global y Fondo de la App */
 html, body, [class*="css"], .stApp {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    background-color: #F9F6F0 !important; /* Gris/crema cálido suave */
+    background-color: #FBF9F6 !important; /* Gris/crema neutro suave */
 }}
 
-/* Barra Lateral (Sidebar) Crema Claro */
+/* Barra Lateral (Sidebar) Blanco Limpio */
 [data-testid="stSidebar"] {{
-    background-color: #FAF8F5 !important;
-    border-right: 1px solid rgba(0, 0, 0, 0.04) !important;
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #EAEAEA !important;
 }}
 
 [data-testid="stSidebar"] * {{
@@ -63,42 +63,41 @@ html, body, [class*="css"], .stApp {{
 /* Ajustar los items de radio del menú lateral */
 [data-testid="stSidebar"] label[data-baseweb="radio"] {{
     padding: 12px 18px !important;
-    border-radius: 0px !important; /* Bordes rectos para barra lateral */
-    margin-bottom: 4px !important;
+    border-radius: 8px !important; 
+    margin-bottom: 6px !important;
     transition: all 0.2s ease-in-out !important;
     color: #4A5568 !important;
     font-weight: 600 !important;
     border: none !important;
-    border-right: 4px solid transparent !important;
     display: block !important;
     background-color: transparent !important;
 }}
 
 /* Hover en items del menú lateral */
 [data-testid="stSidebar"] label[data-baseweb="radio"]:hover {{
-    background-color: rgba(168, 15, 26, 0.04) !important;
-    color: #A80F1A !important;
+    background-color: rgba(183, 28, 28, 0.04) !important;
+    color: #B71C1C !important;
 }}
 
 /* Opción activa en el menú lateral */
 [data-testid="stSidebar"] label[data-checked="true"] {{
-    background-color: #FDE8E8 !important; /* Fondo rosa/rojo suave */
-    color: #A80F1A !important; /* Texto rojo vino */
-    border-right: 4px solid #A80F1A !important; /* Barra de acento roja a la derecha */
+    background-color: #FDE8E8 !important; /* Fondo rosa suave */
+    color: #B71C1C !important; /* Texto rojo vino */
+    border-right: 4px solid #B71C1C !important; /* Barra de acento roja a la derecha */
     font-weight: 700 !important;
 }}
 
-/* Forzar que el texto seleccionado dentro de markdown sea rojo vino */
+/* Forzar que el texto seleccionado sea rojo vino */
 [data-testid="stSidebar"] label[data-checked="true"] div[data-testid="stMarkdownContainer"] p {{
-    color: #A80F1A !important;
+    color: #B71C1C !important;
 }}
 
-/* Estilo para las Tarjetas Blancas */
+/* Contenedor principal de tarjetas con bordes redondeados suavemente */
 div[data-testid="stContainer"] {{
     background-color: #FFFFFF !important;
     border-radius: 16px !important;
     padding: 24px !important;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
     border: 1px solid #EAEAEA !important;
     margin-bottom: 20px !important;
 }}
@@ -110,25 +109,25 @@ div[data-testid="stDataFrame"] {{
     border: 1px solid #EAEAEA !important;
 }}
 
-/* Botones principales en color Rojo Vino Corporativo (#A80F1A) */
+/* Botones principales en color Rojo Vino (#B71C1C) */
 div.stButton > button, div.stDownloadButton > button {{
-    background-color: #A80F1A !important;
+    background-color: #B71C1C !important;
     color: #FFFFFF !important;
     border-radius: 20px !important; /* Botón píldora */
-    border: 1px solid #A80F1A !important;
+    border: 1px solid #B71C1C !important;
     padding: 10px 24px !important;
     font-size: 0.9rem !important;
     font-weight: 600 !important;
     transition: all 0.2s ease-in-out !important;
-    box-shadow: 0 2px 6px rgba(168, 15, 26, 0.15) !important;
+    box-shadow: 0 2px 6px rgba(183, 28, 28, 0.15) !important;
 }}
 
 div.stButton > button:hover, div.stDownloadButton > button:hover {{
-    background-color: #8C0C14 !important;
-    border-color: #8C0C14 !important;
+    background-color: #9A1515 !important;
+    border-color: #9A1515 !important;
     color: #FFFFFF !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(168, 15, 26, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3) !important;
 }}
 
 div.stButton > button:active, div.stDownloadButton > button:active {{
@@ -155,20 +154,55 @@ div[data-testid="stExpander"] {{
 }}
 
 .streamlit-expanderHeader:hover {{
-    color: #A80F1A !important;
+    color: #B71C1C !important;
 }}
 
 /* Rediseño de burbujas del Chat */
-div[data-testid="stChatMessage"] {{
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {{
     background-color: #FFFFFF !important;
     border-radius: 16px !important;
     border: 1px solid #EAEAEA !important;
+    border-left: 5px solid #B71C1C !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.01) !important;
     padding: 16px !important;
     margin-bottom: 12px !important;
 }}
 
-/* Caja de entrada del chat circular estilo Lau */
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {{
+    background-color: #B71C1C !important;
+    color: #FFFFFF !important;
+    border: 1px solid #B71C1C !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.1) !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+}}
+
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) * {{
+    color: #FFFFFF !important;
+}}
+
+/* Avatar del asistente en color rojo vino con icono blanco */
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) div[data-testid="stChatMessageAvatar"] {{
+    background-color: #B71C1C !important;
+    border: 1px solid #B71C1C !important;
+}}
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) div[data-testid="stChatMessageAvatar"] svg {{
+    fill: #FFFFFF !important;
+    color: #FFFFFF !important;
+}}
+
+/* Avatar del usuario en color rosa suave con icono rojo vino */
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) div[data-testid="stChatMessageAvatar"] {{
+    background-color: #FDE8E8 !important;
+    border: 1px solid #FDE8E8 !important;
+}}
+div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) div[data-testid="stChatMessageAvatar"] svg {{
+    fill: #B71C1C !important;
+    color: #B71C1C !important;
+}}
+
+/* Caja de entrada del chat circular */
 div[data-testid="stChatInput"] {{
     border-radius: 30px !important;
     border: 1px solid #EAEAEA !important;
@@ -178,7 +212,7 @@ div[data-testid="stChatInput"] {{
 
 /* Botón de envío de chat circular rojo */
 div[data-testid="stChatInput"] button {{
-    background-color: #A80F1A !important;
+    background-color: #B71C1C !important;
     color: #FFFFFF !important;
     border-radius: 50% !important;
     border: none !important;
@@ -190,17 +224,17 @@ div[data-testid="stChatInput"] button {{
 }}
 
 div[data-testid="stChatInput"] button:hover {{
-    background-color: #8C0C14 !important;
+    background-color: #9A1515 !important;
 }}
 </style>
 """, unsafe_allow_html=True)
 
-# Encabezado en el Sidebar con el Logo circular de Barrio Pizza y título alineados
+# Encabezado en el Sidebar con el Logo circular de Barrio Pizza y título alineados en rojo vino (#B71C1C)
 st.sidebar.markdown(f"""
 <div style='display: flex; align-items: center; gap: 12px; margin-top: 10px; margin-bottom: 25px; padding-left: 10px;'>
     <img src='{logo_base64}' style='width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.06); object-fit: cover;'>
     <div>
-        <h3 style='margin: 0; color: #2D2D2D; font-size: 1.2rem; font-weight: 800; line-height: 1.1;'>Barrio Pizza</h3>
+        <h3 style='margin: 0; color: #B71C1C; font-size: 1.25rem; font-weight: 800; line-height: 1.1; font-family: "Plus Jakarta Sans", sans-serif;'>Barrio Pizza</h3>
         <p style='margin: 2px 0 0 0; color: #718096; font-size: 0.8rem; font-weight: 600;'>Control de Órdenes</p>
     </div>
 </div>
@@ -225,10 +259,8 @@ with col_h1:
         unsafe_allow_html=True
     )
 with col_h2:
-    # Campo estético de búsqueda (se puede utilizar para filtrar productos en el futuro)
     st.text_input("Buscar", placeholder="🔍 Buscar insumos...", label_visibility="collapsed", key="global_search")
 with col_h3:
-    # Botón superior derecho de recarga rápida
     col_sub_btn, col_sub_icons = st.columns([2, 1])
     with col_sub_btn:
         if st.button("Re-Calcular Alertas", key="top_recalculate", use_container_width=True):
@@ -237,11 +269,10 @@ with col_h3:
             st.toast("Órdenes recalculadas exitosamente.", icon="🔄")
             st.rerun()
     with col_sub_icons:
-        # Iconos de perfil y campana
         st.markdown(
-            "<div style='display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 6px; font-size: 1.3rem; color: #718096;'>"
-            "<span style='cursor:pointer;'>🔔</span>"
-            "<span style='cursor:pointer; background-color: #E2E8F0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; color: #4A5568;'>L</span>"
+            "<div style='display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 6px; font-size: 1.3rem; color: #718096;'>\n"
+            "<span style='cursor:pointer;'>🔔</span>\n"
+            "<span style='cursor:pointer; background-color: #E2E8F0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; color: #4A5568;'>L</span>\n"
             "</div>",
             unsafe_allow_html=True
         )

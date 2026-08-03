@@ -77,16 +77,12 @@ def render_tab_analytics():
     stock_val = row_data["stock_actual_unidad_base"]
     necesidad_val = row_data["necesidad_real"]
     unidad = row_data["unidad_base"]
-    formato_txt = row_data["formato_compra"]
 
     # Calcular Métricas Superiores dinámicas
     consumo_semanal_promedio = np.mean(hist_values) if hist_values else 0.0
     cobertura_dias = (stock_val / proyeccion_val) * 7 if proyeccion_val > 0 else 99.0
-    
-    # Calcular merma/exceso estimado
     merma_estimada = max(0.0, stock_val - proyeccion_val) if row_data["es_perecedero"] == "Sí" else 0.0
 
-    # Determinar texto y color de cobertura
     if cobertura_dias < 3.0:
         cobertura_status = "Crítico 🔴"
     elif cobertura_dias < 7.0:
@@ -94,12 +90,12 @@ def render_tab_analytics():
     else:
         cobertura_status = "Exceso 🔵"
 
-    # Renderizar las 4 tarjetas KPI de Proyecciones estilo Lau (Image 4)
+    # Renderizar las 4 tarjetas KPI de Proyecciones estilo Lau
     st.markdown(f"""
     <div class="kpi-grid">
         <div class="kpi-box">
             <div class="kpi-header kpi-title-sucursales">
-                <span>Consumo Total (Semanal)</span>
+                <span>Consumo Total Semanal</span>
                 <span>⌛</span>
             </div>
             <div class="kpi-body">
@@ -114,7 +110,7 @@ def render_tab_analytics():
             </div>
             <div class="kpi-body">
                 <span class="kpi-num">{stock_val:.1f} {unidad}</span>
-                <span class="kpi-badge kpi-badge-green" style="background-color: #FFF5F5; color: #E53935;">↘ 5.1%</span>
+                <span class="kpi-badge kpi-badge-green" style="background-color: #FFF5F5; color: #B71C1C;">↘ 5.1%</span>
             </div>
         </div>
         <div class="kpi-box">
@@ -124,7 +120,7 @@ def render_tab_analytics():
             </div>
             <div class="kpi-body">
                 <span class="kpi-num">{cobertura_dias:.1f} Días</span>
-                <span class="kpi-badge" style="background-color: #FFF5F5; color: #E53935; font-weight: bold;">{cobertura_status}</span>
+                <span class="kpi-badge" style="background-color: #FFF5F5; color: #B71C1C; font-weight: bold;">{cobertura_status}</span>
             </div>
         </div>
         <div class="kpi-box">
@@ -150,25 +146,25 @@ def render_tab_analytics():
         
         fig_line = go.Figure()
         
-        # Histórico S1 a S6 (curva spline gris oscuro con marcadores blancos de borde gris)
+        # Histórico S1 a S6 (línea negra continua con puntos blancos con borde negro)
         fig_line.add_trace(go.Scatter(
             x=weeks,
             y=hist_values,
             mode="lines+markers",
             name="Consumo Real",
-            line=dict(color="#2D2D2D", width=4, shape="spline"),
-            marker=dict(size=10, color="#FFFFFF", line=dict(color="#2D2D2D", width=3)),
+            line=dict(color="#000000", width=4, shape="spline"),
+            marker=dict(size=10, color="#FFFFFF", line=dict(color="#000000", width=3)),
             hovertemplate="Semana %{x}<br>Consumo: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
-        # Proyección S6 a S7 (línea de guiones roja con marcador circular rojo de borde blanco)
+        # Proyección S6 a S7 (línea punteada roja apuntando a S7)
         fig_line.add_trace(go.Scatter(
             x=["S6", "S7 (Pred)"],
             y=[hist_values[-1], proyeccion_val],
             mode="lines+markers",
             name="Predicción",
-            line=dict(color="#A80F1A", width=4, dash="dash"),
-            marker=dict(size=12, color="#A80F1A", line=dict(color="#FFFFFF", width=2)),
+            line=dict(color="#B71C1C", width=4, dash="dot"),
+            marker=dict(size=12, color="#B71C1C", line=dict(color="#FFFFFF", width=2)),
             hovertemplate="Semana %{x}<br>Proyección: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
@@ -178,19 +174,8 @@ def render_tab_analytics():
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            xaxis=dict(
-                showline=True,
-                showgrid=True,
-                gridcolor="#EAEAEA",
-                linecolor="#EAEAEA"
-            ),
-            yaxis=dict(
-                showgrid=True,
-                gridcolor="#EAEAEA",
-                linecolor="#EAEAEA",
-                zeroline=True,
-                zerolinecolor="#EAEAEA"
-            ),
+            xaxis=dict(showline=True, showgrid=True, gridcolor="#EAEAEA", linecolor="#EAEAEA"),
+            yaxis=dict(showgrid=True, gridcolor="#EAEAEA", linecolor="#EAEAEA", zeroline=True, zerolinecolor="#EAEAEA"),
             hovermode="x unified"
         )
         
@@ -201,7 +186,7 @@ def render_tab_analytics():
         st.markdown("##### Inventario vs Necesidad")
         st.markdown(f"<p style='color: #718096; font-size: 0.85rem; margin-top: -8px;'>Stock actual vs Proyección para próximos 7 días</p>", unsafe_allow_html=True)
         
-        # Obtener valores para todas las sucursales de este ingrediente para mostrar en barras
+        # Obtener valores para todas las sucursales de este ingrediente
         df_all_suc = df_alertas[df_alertas["ingrediente_id"] == selected_ing_id].copy()
         
         fig_bar = go.Figure()
@@ -210,17 +195,17 @@ def render_tab_analytics():
         fig_bar.add_trace(go.Bar(
             x=df_all_suc["sucursal"],
             y=df_all_suc["stock_actual_unidad_base"],
-            name="Stock Actual (kg)",
+            name="Stock Actual",
             marker_color="#2F855A",
             hovertemplate="%{x}<br>Stock: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
-        # Barras de Necesidad Real (rojo)
+        # Barras de Necesidad Real (rojo/vino)
         fig_bar.add_trace(go.Bar(
             x=df_all_suc["sucursal"],
             y=df_all_suc["necesidad_real"],
-            name="Necesidad (7 Días)",
-            marker_color="#C53030",
+            name="Necesidad",
+            marker_color="#B71C1C",
             hovertemplate="%{x}<br>Necesidad: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
@@ -231,20 +216,13 @@ def render_tab_analytics():
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            xaxis=dict(
-                showline=True,
-                linecolor="#EAEAEA"
-            ),
-            yaxis=dict(
-                showgrid=True,
-                gridcolor="#EAEAEA",
-                linecolor="#EAEAEA"
-            )
+            xaxis=dict(showline=True, linecolor="#EAEAEA"),
+            yaxis=dict(showgrid=True, gridcolor="#EAEAEA", linecolor="#EAEAEA")
         )
         
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # 3. Detalle por Sucursal (Tabla inferior idéntica a la Imagen 4 de Lau)
+    # 3. Detalle por Sucursal (Tabla inferior)
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"##### Detalle por Sucursal ({selected_ing_name})")
     
@@ -252,7 +230,7 @@ def render_tab_analytics():
     df_detalle_suc = df_all_suc.copy()
     
     # Calcular Consumo Promedio Diario
-    df_detalle_suc["Consumo Prom. (Día)"] = df_detalle_suc["proyeccion"] / 7
+    df_detalle_suc["Consumo Promedio"] = df_detalle_suc["proyeccion"] / 7
     
     # Formatear el Estado
     df_detalle_suc["Estado"] = df_detalle_suc["alerta_tipo"].map({
@@ -271,7 +249,7 @@ def render_tab_analytics():
     })
 
     df_detalle_display = df_detalle_suc[[
-        "sucursal", "Consumo Prom. (Día)", "stock_actual_unidad_base", "necesidad_real", "Estado", "Acción Recomendada"
+        "sucursal", "Consumo Promedio", "stock_actual_unidad_base", "necesidad_real", "Estado", "Acción Recomendada"
     ]].rename(columns={
         "sucursal": "Sucursal",
         "stock_actual_unidad_base": "Stock Actual",
@@ -280,7 +258,7 @@ def render_tab_analytics():
 
     column_config_table = {
         "Sucursal": st.column_config.TextColumn("Sucursal", disabled=True),
-        "Consumo Prom. (Día)": st.column_config.NumberColumn("Consumo Prom. (Día)", format="%.2f %s" % (unidad,), disabled=True),
+        "Consumo Promedio": st.column_config.NumberColumn("Consumo Promedio", format="%.2f %s" % (unidad,), disabled=True),
         "Stock Actual": st.column_config.NumberColumn("Stock Actual", format="%.2f %s" % (unidad,), disabled=True),
         "Necesidad (7 Días)": st.column_config.NumberColumn("Necesidad (7 Días)", format="%.2f %s" % (unidad,), disabled=True),
         "Estado": st.column_config.TextColumn("Estado", disabled=True),
