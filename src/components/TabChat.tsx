@@ -112,7 +112,10 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 11
 `;
 
       const ai = new GoogleGenerativeAI(apiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = ai.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        systemInstruction: systemInstruction
+      });
 
       // Alimentar el historial de chat para mantener el contexto, asegurando que comience con un rol 'user'
       const firstUserIdx = messages.findIndex(m => m.role === 'user');
@@ -124,8 +127,7 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 11
         : [];
 
       const chat = model.startChat({
-        history: cleanHistory,
-        systemInstruction: systemInstruction
+        history: cleanHistory
       });
 
       const response = await chat.sendMessage(textToSend);
