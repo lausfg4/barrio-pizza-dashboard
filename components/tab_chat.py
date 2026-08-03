@@ -136,7 +136,7 @@ Reglas estrictas para tu comportamiento:
                 api_history.append({"role": role, "parts": [m["content"]]})
                 
             # Establecer sesión de chat
-            chat = model.start_chat(history=api_history)
+            chat = model.start_chat(history=api_history)  # type: ignore
             
             # Obtener respuesta del modelo
             with chat_container:
