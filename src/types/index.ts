@@ -1,6 +1,7 @@
 export interface Ingrediente {
   ingrediente_id: string;
   nombre: string;
+  proveedor: string;
   unidad_base: string;
   formato_compra: string;
   unidad_base_por_formato: number;
@@ -34,6 +35,7 @@ export interface AlertaConsolidada {
   formato_compra: string;
   unidad_base_por_formato: number;
   es_perecedero: 'Si' | 'No';
+  proveedor: string;
   proyeccion: number;
   stock_actual_unidad_base: number;
   necesidad_real: number;
