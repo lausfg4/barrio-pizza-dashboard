@@ -106,15 +106,23 @@ def process_alerts(data_dir: str = "datos") -> pd.DataFrame:
     df_merged["unidad_base"] = df_merged["unidad_base"].fillna("und")
     df_merged["es_perecedero"] = df_merged["es_perecedero"].fillna("No")
     
-    # 8. Convertir el pedido a unidad base: formatos * factor
-    df_merged["pedido_unidad_base"] = df_merged["cantidad_formatos"] * df_merged["unidad_base_por_formato"]
+    # 8. Calcular alertas usando la función helper
+    df_merged = recalculate_alerts(df_merged)
     
-    # 9. Asignar las alertas
+    return df_merged
+
+def recalculate_alerts(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Recalcula las alertas basándose en las columnas:
+    cantidad_formatos, necesidad_real, unidad_base_por_formato, proyeccion, stock_actual_unidad_base, etc.
+    """
+    df["pedido_unidad_base"] = df["cantidad_formatos"] * df["unidad_base_por_formato"]
+    
     alert_types = []
     alert_messages = []
     alert_icons = []
     
-    for _, row in df_merged.iterrows():
+    for _, row in df.iterrows():
         proj = row["proyeccion"]
         inv = row["stock_actual_unidad_base"]
         nec = row["necesidad_real"]
@@ -173,11 +181,11 @@ def process_alerts(data_dir: str = "datos") -> pd.DataFrame:
         alert_messages.append(msg)
         alert_icons.append(icon)
         
-    df_merged["alerta_tipo"] = alert_types
-    df_merged["alerta_mensaje"] = alert_messages
-    df_merged["alerta_icono"] = alert_icons
+    df["alerta_tipo"] = alert_types
+    df["alerta_mensaje"] = alert_messages
+    df["alerta_icono"] = alert_icons
     
-    return df_merged
+    return df
 
 if __name__ == "__main__":
     print("--- Probando carga y procesamiento de alertas ---")
