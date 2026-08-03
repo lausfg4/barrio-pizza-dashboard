@@ -1,5 +1,6 @@
 import streamlit as st
 from components.tab_alerts import render_tab_alerts
+from components.tab_analytics import render_tab_analytics
 
 # Configuración de página con título e ícono
 st.set_page_config(
@@ -24,8 +25,7 @@ with tab_alerts:
     render_tab_alerts()
     
 with tab_projections:
-    st.subheader("📈 Histórico y Proyecciones")
-    st.info("Esta pestaña se habilitará en la siguiente fase de desarrollo para visualizar las curvas de consumo e histórico por sucursal.")
+    render_tab_analytics()
     
 with tab_chat:
     st.subheader("💬 Asistente de Compras Inteligente")
