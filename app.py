@@ -29,11 +29,13 @@ st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-/* Ocultar elementos nativos de Streamlit */
+/* Ocultar elementos nativos innecesarios pero mantener el stHeader transparente para que el botón del sidebar sea visible */
 #MainMenu {{visibility: hidden;}}
-header {{visibility: hidden;}}
 footer {{visibility: hidden;}}
-[data-testid="stHeader"] {{background-color: transparent !important; height: 0px !important;}}
+[data-testid="stHeader"] {{
+    background-color: transparent !important;
+    box-shadow: none !important;
+}}
 [data-testid="stToolbar"] {{visibility: hidden;}}
 
 /* Ajustar paddings de la pantalla principal */
@@ -67,14 +69,14 @@ html, body, [class*="css"], .stApp {{
     display: none !important;
 }}
 
-/* Eliminar márgenes del texto de radio */
+/* Eliminar márgenes del texto de radio en el sidebar */
 [data-testid="stSidebar"] label[data-baseweb="radio"] > div:nth-of-type(2),
 [data-testid="stSidebar"] div[data-testid="stRadio"] label > div:nth-of-type(2) {{
     margin-left: 0px !important;
     padding-left: 0px !important;
 }}
 
-/* Ocultar el label del widget de radio */
+/* Ocultar el label del widget de radio en el sidebar */
 [data-testid="stSidebar"] div[data-testid="stWidgetLabel"] {{
     display: none !important;
 }}
@@ -91,6 +93,7 @@ html, body, [class*="css"], .stApp {{
     border: none !important;
     display: block !important;
     background-color: transparent !important;
+    border-right: 4px solid transparent !important;
 }}
 
 /* Hover en items del menú lateral */
@@ -111,6 +114,56 @@ html, body, [class*="css"], .stApp {{
 
 /* Forzar que el texto seleccionado sea rojo vino */
 [data-testid="stSidebar"] label[data-checked="true"] div[data-testid="stMarkdownContainer"] p {{
+    color: #B71C1C !important;
+}}
+
+/* Estilos para el radio de la página principal (Píldoras horizontales de alerta) */
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] {{
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+}}
+
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label {{
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 20px !important;
+    padding: 6px 16px !important;
+    background-color: #FFFFFF !important;
+    color: #718096 !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border-right: 1px solid #E2E8F0 !important; /* Restablecer borde derecho */
+}}
+
+/* Ocultar círculo nativo en la página principal */
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label > div:first-of-type {{
+    display: none !important;
+}}
+
+/* Eliminar espaciados del texto de radio en la página principal */
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label > div:nth-of-type(2) {{
+    margin-left: 0px !important;
+    padding-left: 0px !important;
+}}
+
+/* Hover en píldoras */
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label:hover {{
+    background-color: #F8F9FA !important;
+    border-color: #CBD5E1 !important;
+}}
+
+/* Selección activa en píldoras */
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label[data-checked="true"] {{
+    border-color: #B71C1C !important;
+    background-color: rgba(183, 28, 28, 0.05) !important;
+    color: #B71C1C !important;
+}}
+
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label[data-checked="true"] * {{
     color: #B71C1C !important;
 }}
 
