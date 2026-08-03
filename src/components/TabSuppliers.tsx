@@ -127,7 +127,7 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
       {/* Header */}
       <div className="flex flex-col gap-1 mb-2">
         <h2 className="text-3xl font-bold text-[#271716] tracking-tight">Pedidos por Proveedor</h2>
-        <p className="text-sm text-[#5f5e5e] font-medium">Semana 7 — Órdenes de Compra Agrupadas</p>
+        <p className="text-sm text-[#5f5e5e] font-medium">Órdenes de Compra Agrupadas</p>
       </div>
 
       {orders.length === 0 ? (

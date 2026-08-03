@@ -87,7 +87,7 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
       {/* Page Header */}
       <div className="flex flex-col gap-1 mb-2">
         <h2 className="text-3xl font-bold text-[#271716] tracking-tight">Resumen &amp; Alertas</h2>
-        <p className="text-sm text-[#5f5e5e] font-medium">Semana 7 — Revisión Automática de Insumos</p>
+        <p className="text-sm text-[#5f5e5e] font-medium">Revisión Automática de Insumos</p>
       </div>
 
       {/* KPI Cards Bento Grid */}
