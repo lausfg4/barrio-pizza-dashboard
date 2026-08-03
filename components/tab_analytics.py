@@ -119,8 +119,8 @@ def render_tab_analytics():
             y=hist_values,
             mode="lines+markers",
             name="Histórico (S1-S6)",
-            line=dict(color="#2b5c8f", width=3.5),
-            marker=dict(size=8, color="#2b5c8f"),
+            line=dict(color="#0F172A", width=4, shape="spline"),
+            marker=dict(size=9, color="#0F172A"),
             hovertemplate="Semana %{x}<br>Consumo: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
@@ -130,8 +130,8 @@ def render_tab_analytics():
             y=[hist_values[-1], proyeccion_val],
             mode="lines+markers",
             name="Proyección S7",
-            line=dict(color="#dc3545", width=3.5, dash="dash"),
-            marker=dict(size=10, symbol="star", color="#dc3545"),
+            line=dict(color="#E53935", width=4, dash="dash"),
+            marker=dict(size=12, symbol="star", color="#E53935"),
             hovertemplate="Semana %{x}<br>Proyección: %{y:.2f} " + unidad + "<extra></extra>"
         ))
         
@@ -145,16 +145,16 @@ def render_tab_analytics():
             xaxis=dict(
                 showline=True,
                 showgrid=True,
-                gridcolor="rgba(128,128,128,0.2)",
-                linecolor="rgba(128,128,128,0.5)"
+                gridcolor="#E2E8F0",
+                linecolor="#E2E8F0"
             ),
             yaxis=dict(
                 title=f"Consumo ({unidad})",
                 showgrid=True,
-                gridcolor="rgba(128,128,128,0.2)",
-                linecolor="rgba(128,128,128,0.5)",
+                gridcolor="#E2E8F0",
+                linecolor="#E2E8F0",
                 zeroline=True,
-                zerolinecolor="rgba(128,128,128,0.3)"
+                zerolinecolor="#E2E8F0"
             ),
             hovermode="x unified"
         )
@@ -171,7 +171,7 @@ def render_tab_analytics():
         fig_bar.add_trace(go.Bar(
             x=["Stock Actual", "Necesidad Real"],
             y=[stock_val, necesidad_val],
-            marker_color=["#198754", "#dc3545"],
+            marker_color=["#94A3B8", "#0F172A"],
             text=[f"{stock_val:.2f} {unidad}", f"{necesidad_val:.2f} {unidad}"],
             textposition="auto",
             hovertemplate="%{x}: %{y:.2f} " + unidad + "<extra></extra>",
@@ -185,7 +185,7 @@ def render_tab_analytics():
             y0=proyeccion_val,
             x1=1.4,
             y1=proyeccion_val,
-            line=dict(color="#0d6efd", width=3, dash="dash"),
+            line=dict(color="#E53935", width=3, dash="dash"),
         )
         
         # Anotación para la línea de Proyección
@@ -195,7 +195,7 @@ def render_tab_analytics():
             text=f"Proyección: {proyeccion_val:.2f}",
             showarrow=False,
             yshift=12,
-            font=dict(color="#0d6efd", size=11, weight="bold")
+            font=dict(color="#E53935", size=11, weight="bold")
         )
         
         # Ajustar diseño del gráfico de barras
@@ -206,13 +206,13 @@ def render_tab_analytics():
             plot_bgcolor="rgba(0,0,0,0)",
             xaxis=dict(
                 showline=True,
-                linecolor="rgba(128,128,128,0.5)"
+                linecolor="#E2E8F0"
             ),
             yaxis=dict(
                 title=f"Cantidad ({unidad})",
                 showgrid=True,
-                gridcolor="rgba(128,128,128,0.2)",
-                linecolor="rgba(128,128,128,0.5)"
+                gridcolor="#E2E8F0",
+                linecolor="#E2E8F0"
             )
         )
         

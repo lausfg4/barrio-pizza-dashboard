@@ -71,16 +71,17 @@ def render_tab_alerts():
         margin-top: 15px;
     }}
     .kpi-card {{
-        background-color: var(--secondary-background-color, #f0f2f6);
-        border-radius: 10px;
+        background-color: #FFFFFF;
+        border-radius: 16px;
         padding: 15px 20px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
         border-left: 6px solid #ccc;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         transition: transform 0.2s, box-shadow 0.2s;
     }}
     .kpi-card:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
     }}
     .kpi-card.sucursales {{ border-left-color: #9c27b0; }}
     .kpi-card.quiebres {{ border-left-color: #dc3545; }}
@@ -88,18 +89,17 @@ def render_tab_alerts():
     .kpi-card.olvidados {{ border-left-color: #0d6efd; }}
     
     .kpi-label {{
-        font-size: 0.85rem;
-        color: var(--text-color, #31333F);
-        opacity: 0.8;
+        font-size: 0.82rem;
+        color: #64748B;
         font-weight: 600;
         margin-bottom: 5px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }}
     .kpi-value {{
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--text-color, #31333F);
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #0F172A;
         display: flex;
         align-items: center;
         justify-content: space-between;
