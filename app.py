@@ -36,6 +36,10 @@ footer {{visibility: hidden;}}
     background-color: transparent !important;
     box-shadow: none !important;
 }}
+[data-testid="stHeader"] * {{
+    color: #B71C1C !important;
+    fill: #B71C1C !important;
+}}
 [data-testid="stToolbar"] {{visibility: hidden;}}
 
 /* Ajustar paddings de la pantalla principal */
