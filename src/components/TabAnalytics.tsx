@@ -342,10 +342,10 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
         <div className="px-6 py-4 border-b border-[#e4beb9]/20">
           <h3 className="text-sm font-bold text-[#271716] uppercase tracking-wider">Detalle de Cobertura de Stock</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="max-h-[480px] overflow-y-auto overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#fff0ee]/15 border-b border-[#e4beb9]/20">
+              <tr className="bg-[#fff0ee]/15 border-b border-[#e4beb9]/20 sticky top-0 z-10 backdrop-blur-md">
                 <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Ingrediente</th>
                 <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Sucursal</th>
                 <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Consumo Promedio</th>
@@ -355,7 +355,7 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
               </tr>
             </thead>
             <tbody className="text-xs font-medium text-[#271716]">
-              {detailTableData.slice(0, 10).map((row, index) => {
+              {detailTableData.map((row, index) => {
                 return (
                   <tr 
                     key={`${row.sucursal}-${row.ingrediente}`} 
