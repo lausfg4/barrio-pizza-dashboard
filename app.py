@@ -9,7 +9,8 @@ from components.tab_chat import render_tab_chat
 st.set_page_config(
     page_title="Barrio Pizza - Control de Órdenes",
     page_icon="🍕",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Función para convertir una imagen local a Base64 y usarla en HTML
@@ -28,6 +29,22 @@ st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
+/* Ocultar elementos nativos de Streamlit */
+#MainMenu {{visibility: hidden;}}
+header {{visibility: hidden;}}
+footer {{visibility: hidden;}}
+[data-testid="stHeader"] {{background-color: transparent !important; height: 0px !important;}}
+[data-testid="stToolbar"] {{visibility: hidden;}}
+
+/* Ajustar paddings de la pantalla principal */
+.block-container {{
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+    max-width: 100% !important;
+}}
+
 /* Fuente Global y Fondo de la App */
 html, body, [class*="css"], .stApp {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -45,12 +62,14 @@ html, body, [class*="css"], .stApp {{
 }}
 
 /* Ocultar el círculo nativo del radio button en el sidebar */
-[data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-of-type {{
+[data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-of-type,
+[data-testid="stSidebar"] div[data-testid="stRadio"] label > div:first-of-type {{
     display: none !important;
 }}
 
 /* Eliminar márgenes del texto de radio */
-[data-testid="stSidebar"] label[data-baseweb="radio"] > div:nth-of-type(2) {{
+[data-testid="stSidebar"] label[data-baseweb="radio"] > div:nth-of-type(2),
+[data-testid="stSidebar"] div[data-testid="stRadio"] label > div:nth-of-type(2) {{
     margin-left: 0px !important;
     padding-left: 0px !important;
 }}
@@ -61,7 +80,8 @@ html, body, [class*="css"], .stApp {{
 }}
 
 /* Ajustar los items de radio del menú lateral */
-[data-testid="stSidebar"] label[data-baseweb="radio"] {{
+[data-testid="stSidebar"] label[data-baseweb="radio"],
+[data-testid="stSidebar"] div[data-testid="stRadio"] label {{
     padding: 12px 18px !important;
     border-radius: 8px !important; 
     margin-bottom: 6px !important;
@@ -74,13 +94,15 @@ html, body, [class*="css"], .stApp {{
 }}
 
 /* Hover en items del menú lateral */
-[data-testid="stSidebar"] label[data-baseweb="radio"]:hover {{
+[data-testid="stSidebar"] label[data-baseweb="radio"]:hover,
+[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {{
     background-color: rgba(183, 28, 28, 0.04) !important;
     color: #B71C1C !important;
 }}
 
 /* Opción activa en el menú lateral */
-[data-testid="stSidebar"] label[data-checked="true"] {{
+[data-testid="stSidebar"] label[data-checked="true"],
+[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-checked="true"] {{
     background-color: #FDE8E8 !important; /* Fondo rosa suave */
     color: #B71C1C !important; /* Texto rojo vino */
     border-right: 4px solid #B71C1C !important; /* Barra de acento roja a la derecha */
@@ -102,11 +124,24 @@ div[data-testid="stContainer"] {{
     margin-bottom: 20px !important;
 }}
 
+/* Forzar fondos blancos y bordes estéticos en entradas de texto y multiselects */
+div[data-baseweb="select"], div[data-testid="stTextInput"] input {{
+    background-color: #FFFFFF !important;
+    border-radius: 8px !important;
+    border: 1px solid #E2E8F0 !important;
+    color: #2D2D2D !important;
+}}
+
+div[data-baseweb="select"] * {{
+    color: #2D2D2D !important;
+}}
+
 /* Redondear visualizadores de dataframes */
 div[data-testid="stDataFrame"] {{
     border-radius: 12px !important;
     overflow: hidden;
     border: 1px solid #EAEAEA !important;
+    background-color: #FFFFFF !important;
 }}
 
 /* Botones principales en color Rojo Vino (#B71C1C) */
