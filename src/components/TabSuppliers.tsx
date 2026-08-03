@@ -11,30 +11,30 @@ interface TabSuppliersProps {
 export default function TabSuppliers({ alerts }: TabSuppliersProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
 
-  // Precios estimados para calcular el costo de los pedidos
+  // Precios estimados para calcular el costo de los pedidos por unidad base
   const preciosUnitarios: Record<string, number> = {
+    'Harina 00': 1.20,
+    'Harina gluten free': 2.50,
+    'Semola': 1.50,
+    'Levadura': 4.00,
+    'Oregano seco': 8.00,
     'Mozzarella': 6.50,
-    'Flour (00)': 1.20,
-    'Tomatoes (San Marzano)': 2.50,
-    'Olive Oil': 9.00,
+    'Burrata': 9.00,
+    'Salsa pelatti': 2.50,
     'Pepperoni': 14.00,
-    'Ham': 8.50,
+    'Jamon': 8.50,
+    'Parmesano': 12.00,
+    'Queso vegano': 9.50,
+    'Aceite de oliva': 9.00,
+    'Aceitunas': 5.00,
+    'Albahaca fresca': 4.00,
     'Arugula': 5.00,
-    'Mushrooms': 4.50,
-    'Onions': 1.00
-  };
-
-  // Mapear insumos a proveedores específicos
-  const proveedoresInsumos: Record<string, string> = {
-    'Mozzarella': 'Quesos de la Villa',
-    'Flour (00)': 'Distribuidora DPA',
-    'Tomatoes (San Marzano)': 'Frutas & Más',
-    'Olive Oil': 'Distribuidora DPA',
-    'Pepperoni': 'Quesos de la Villa',
-    'Ham': 'Quesos de la Villa',
-    'Arugula': 'Frutas & Más',
-    'Mushrooms': 'Frutas & Más',
-    'Onions': 'Frutas & Más'
+    'Hongos': 4.50,
+    'Cebolla blanca': 1.00,
+    'Pimenton': 2.50,
+    'Pina': 1.50,
+    'Prosciutto': 18.00,
+    'Cajas de pizza': 0.35
   };
 
   // Agrupar órdenes por Proveedor
@@ -50,7 +50,7 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
     alerts.forEach(a => {
       // Solo incluimos insumos con pedido mayor a 0
       if (a.cantidad_formatos > 0) {
-        const prov = proveedoresInsumos[a.nombre] || 'Distribuidora DPA';
+        const prov = a.proveedor || 'Distribuidora DPA';
         const precioUnit = preciosUnitarios[a.nombre] || 3.00;
         const totalBase = a.cantidad_formatos * a.unidad_base_por_formato;
         const costoEstimado = totalBase * precioUnit;
