@@ -27,17 +27,19 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
     return Array.from(new Set(alerts.map(a => a.sucursal)));
   }, [alerts]);
 
-  // Contadores para las KPI Cards
+  // Contadores para las KPI Cards (dinámicos según la sucursal seleccionada)
   const kpis = useMemo(() => {
-    const sucursalesCount = sucursales.length;
+    const sucursalesCount = selectedSucursal === 'all' ? sucursales.length : 1;
     let critico = 0;
     let sobrepedido = 0;
     let olvidado = 0;
 
     alerts.forEach(a => {
-      if (a.alerta_tipo === 'Riesgo de Quiebre') critico++;
-      else if (a.alerta_tipo === 'Sobre-pedido') sobrepedido++;
-      else if (a.alerta_tipo === 'Insumo Olvidado') olvidado++;
+      if (selectedSucursal === 'all' || a.sucursal === selectedSucursal) {
+        if (a.alerta_tipo === 'Riesgo de Quiebre') critico++;
+        else if (a.alerta_tipo === 'Sobre-pedido') sobrepedido++;
+        else if (a.alerta_tipo === 'Insumo Olvidado') olvidado++;
+      }
     });
 
     return {
@@ -46,7 +48,7 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
       sobrepedido,
       olvidado
     };
-  }, [alerts, sucursales]);
+  }, [alerts, sucursales, selectedSucursal]);
 
   // Manejar el cambio inline de cantidad de pedido
   const handleCantidadChange = (ingredienteId: string, sucursal: string, val: number) => {
