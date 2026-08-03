@@ -102,9 +102,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{kpis.sucursales} Active</div>
-            <div className="flex items-center text-[#b7131a] bg-[#fff0ee] px-2 py-0.5 rounded text-xs font-bold">
-              <TrendingUp className="w-3.5 h-3.5 mr-1" /> 100%
-            </div>
           </div>
         </div>
 
@@ -119,12 +116,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between relative z-10">
             <div className="text-2xl font-bold text-[#271716]">{kpis.critico} items</div>
-            <button 
-              onClick={() => setSelectedAlertaTipo('critico')}
-              className="text-[#b7131a] text-xs font-bold underline cursor-pointer hover:text-[#93000d] bg-transparent border-none"
-            >
-              Ver Detalle
-            </button>
           </div>
         </div>
 
@@ -138,7 +129,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{kpis.sobrepedido} items</div>
-            <span className="text-xs font-semibold text-[#5f5e5e]">Analizado</span>
           </div>
         </div>
 
@@ -152,7 +142,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{kpis.olvidado} items</div>
-            <span className="text-xs font-semibold text-[#5f5e5e] hover:underline cursor-pointer" onClick={() => setSelectedAlertaTipo('olvido')}>Pendiente</span>
           </div>
         </div>
       </div>
