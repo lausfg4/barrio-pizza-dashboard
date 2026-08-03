@@ -86,21 +86,10 @@ html, body, [class*="css"], .stApp {{
     color: #2D2D2D !important;
 }}
 
-/* Ocultar el círculo nativo del radio button en el sidebar */
-[data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-of-type,
-[data-testid="stSidebar"] div[data-testid="stRadio"] label > div:first-of-type {{
-    display: none !important;
-}}
-
-/* Eliminar márgenes del texto de radio en el sidebar */
-[data-testid="stSidebar"] label[data-baseweb="radio"] > div:nth-of-type(2),
-[data-testid="stSidebar"] div[data-testid="stRadio"] label > div:nth-of-type(2) {{
-    margin-left: 0px !important;
-    padding-left: 0px !important;
-}}
-
-/* Ocultar el label del widget de radio en el sidebar */
-[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] {{
+/* Ocultar únicamente el círculo del botón de radio en el sidebar (no el texto) */
+[data-testid="stSidebar"] div[data-testid="stRadio"] label div[role="presentation"],
+[data-testid="stSidebar"] div[data-testid="stRadio"] label div[data-testid="stBaseWebRadioCircle"],
+[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="RadioCircle"] {{
     display: none !important;
 }}
 
@@ -163,14 +152,10 @@ div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="
 }}
 
 /* Ocultar círculo nativo en la página principal */
-div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label > div:first-of-type {{
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label div[role="presentation"],
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label div[data-testid="stBaseWebRadioCircle"],
+div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label div[class*="RadioCircle"] {{
     display: none !important;
-}}
-
-/* Eliminar espaciados del texto de radio en la página principal */
-div[data-testid="stAppViewBlockContainer"] div[data-testid="stRadio"] div[role="radiogroup"] label > div:nth-of-type(2) {{
-    margin-left: 0px !important;
-    padding-left: 0px !important;
 }}
 
 /* Hover en píldoras */
