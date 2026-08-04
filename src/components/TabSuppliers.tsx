@@ -11,32 +11,6 @@ interface TabSuppliersProps {
 export default function TabSuppliers({ alerts }: TabSuppliersProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
 
-  // Precios estimados para calcular el costo de los pedidos por unidad base
-  const preciosUnitarios: Record<string, number> = {
-    'Harina 00': 1.20,
-    'Harina gluten free': 2.50,
-    'Semola': 1.50,
-    'Levadura': 4.00,
-    'Oregano seco': 8.00,
-    'Mozzarella': 6.50,
-    'Burrata': 9.00,
-    'Salsa pelatti': 2.50,
-    'Pepperoni': 14.00,
-    'Jamon': 8.50,
-    'Parmesano': 12.00,
-    'Queso vegano': 9.50,
-    'Aceite de oliva': 9.00,
-    'Aceitunas': 5.00,
-    'Albahaca fresca': 4.00,
-    'Arugula': 5.00,
-    'Hongos': 4.50,
-    'Cebolla blanca': 1.00,
-    'Pimenton': 2.50,
-    'Pina': 1.50,
-    'Prosciutto': 18.00,
-    'Cajas de pizza': 0.35
-  };
-
   // Agrupar órdenes por Proveedor
   const orders = useMemo(() => {
     const ordersMap = new Map<string, Array<{
@@ -44,16 +18,12 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
       cantidadFormatos: number;
       formato: string;
       unidadBasePorFormato: number;
-      costoEstimado: number;
     }>>();
 
     alerts.forEach(a => {
       // Solo incluimos insumos con pedido mayor a 0
       if (a.cantidad_formatos > 0) {
         const prov = a.proveedor || 'Distribuidora DPA';
-        const precioUnit = preciosUnitarios[a.nombre] || 3.00;
-        const totalBase = a.cantidad_formatos * a.unidad_base_por_formato;
-        const costoEstimado = totalBase * precioUnit;
 
         if (!ordersMap.has(prov)) {
           ordersMap.set(prov, []);
@@ -63,15 +33,13 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
           ingrediente: a.nombre,
           cantidadFormatos: a.cantidad_formatos,
           formato: a.formato_compra,
-          unidadBasePorFormato: a.unidad_base_por_formato,
-          costoEstimado
+          unidadBasePorFormato: a.unidad_base_por_formato
         });
       }
     });
 
     // Crear lista de proveedores con códigos y metadatos simulados
     const list = Array.from(ordersMap.entries()).map(([proveedor, items], index) => {
-      const totalPedido = items.reduce((acc, i) => acc + i.costoEstimado, 0);
       const initials = proveedor.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
       // Metadatos simulados por consistencia
@@ -85,8 +53,7 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
         codigoOrden: codes[index % codes.length],
         fechaEntrega: dates[index % dates.length],
         estado: statuses[index % statuses.length],
-        items,
-        totalPedido
+        items
       };
     });
 
@@ -118,7 +85,6 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
       <tr>
         <th>Insumo</th>
         <th class="number">Cantidad Pedida</th>
-        <th class="number">Costo Estimado (USD)</th>
       </tr>
     </thead>
     <tbody>
@@ -126,14 +92,8 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
         <tr>
           <td>${item.ingrediente}</td>
           <td class="number">${item.cantidadFormatos} ${item.formato}</td>
-          <td class="number">$${item.costoEstimado.toFixed(2)}</td>
         </tr>
       `).join('')}
-      <tr class="total-row">
-        <td>Total General Estimado</td>
-        <td class="number">-</td>
-        <td class="number">$${order.totalPedido.toFixed(2)}</td>
-      </tr>
     </tbody>
   </table>
 </body>
@@ -152,12 +112,11 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
 
   // Exportar datos a CSV
   const handleExportCSV = (order: typeof orders[0]) => {
-    const headers = ['Insumo', 'Cantidad Pedida', 'Formato', 'Costo Estimado (USD)'];
+    const headers = ['Insumo', 'Cantidad Pedida', 'Formato'];
     const rows = order.items.map(i => [
       i.ingrediente,
       i.cantidadFormatos,
-      i.formato,
-      i.costoEstimado.toFixed(2)
+      i.formato
     ]);
 
     const csvContent = [
@@ -217,12 +176,6 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
                   </div>
 
                   <div className="flex items-center gap-4 self-end md:self-auto">
-                    {/* Total Order Cost */}
-                    <div className="text-right">
-                      <p className="text-[10px] text-[#5f5e5e] font-bold uppercase tracking-wider">Total Estimado</p>
-                      <p className="text-sm font-bold text-[#b7131a]">${order.totalPedido.toFixed(2)}</p>
-                    </div>
-
                     {isExpanded ? <ChevronUp className="w-5 h-5 text-[#5f5e5e]" /> : <ChevronDown className="w-5 h-5 text-[#5f5e5e]" />}
                   </div>
                 </button>
@@ -237,7 +190,6 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
                           <tr className="bg-[#fff0ee]/15 border-b border-[#e4beb9]/20 text-[11px] font-bold text-[#5f5e5e]">
                             <th className="py-2.5 px-4">Insumo</th>
                             <th className="py-2.5 px-4 text-right">Cantidad Pedida</th>
-                            <th className="py-2.5 px-4 text-right">Costo Estimado</th>
                           </tr>
                         </thead>
                         <tbody className="text-xs font-semibold text-[#271716]">
@@ -246,9 +198,6 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
                               <td className="py-2.5 px-4">{item.ingrediente}</td>
                               <td className="py-2.5 px-4 text-right font-mono">
                                 {item.cantidadFormatos} {item.formato}
-                              </td>
-                              <td className="py-2.5 px-4 text-right font-mono text-[#b7131a]">
-                                ${item.costoEstimado.toFixed(2)}
                               </td>
                             </tr>
                           ))}
