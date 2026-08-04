@@ -20,12 +20,19 @@ npm install
 
 ### Paso 2: Configurar la API Key de Gemini (Asistente IA)
 Para utilizar la pestaña de **Asistente IA**, necesitas proporcionar una API Key de Google Gemini.
-1. Crea un archivo llamado `.env.local` en la raíz del proyecto.
-2. Agrega la siguiente variable de entorno con tu clave:
-```env
-NEXT_PUBLIC_GEMINI_API_KEY=tu_api_key_aqui
-```
-*Nota: Si no posees una clave, el dashboard iniciará normalmente y te permitirá interactuar con el resto de las pestañas de forma local.*
+
+1. **Localmente:**
+   - Crea un archivo llamado `.env.local` en la raíz del proyecto.
+   - Agrega la siguiente variable de entorno con tu clave:
+     ```env
+     NEXT_PUBLIC_GEMINI_API_KEY=tu_api_key_aqui
+     ```
+
+2. **En Producción (Vercel):**
+   - Agrega una nueva Variable de Entorno en el panel de Vercel con la clave `NEXT_PUBLIC_GEMINI_API_KEY` y tu API Key como valor.
+
+*Nota 1: Por seguridad, se ha deshabilitado el ingreso manual de la API Key a través de la interfaz web, haciendo mandatorio configurarla a través de variables de entorno.*
+*Nota 2: Si no posees una clave, el dashboard iniciará de todas formas de forma normal y te permitirá interactuar con el resto de las pestañas locales sin el chat bot.*
 
 ### Paso 3: Ejecutar en Modo Desarrollo
 Inicia el servidor local de desarrollo:
@@ -90,3 +97,25 @@ El sistema compara el pedido actual de la sucursal (convertido a unidad base) co
 * **Gráficos e Indicadores**: Recharts
 * **Iconografía**: Lucide React
 * **Motor IA**: Google Generative AI SDK (Gemini-3.5-flash)
+
+---
+
+## 🔌 Conexión e Integración con Odoo ERP
+
+Para escalar este Dashboard de Barrio Pizza y conectarlo en tiempo real con **Odoo ERP** (automatizando la ingesta de stocks y el envío de órdenes de compra), se propone la siguiente arquitectura de integración:
+
+### 1. Sincronización de Datos (Lectura desde Odoo)
+Actualmente, el dashboard lee archivos CSV estáticos de la carpeta `/datos`. Para conectarse con Odoo:
+* **Inventario en Tiempo Real (`stock.quant`):** Se puede programar un servicio en Next.js (por ejemplo, una API Route o un script de sincronización con Cron) que consulte los inventarios físicos de Odoo a través de su protocolo **XML-RPC** o **JSON-RPC**.
+* **Catálogo de Insumos (`product.product`):** Sincroniza la lista de ingredientes, formatos de compra y sus equivalencias de unidades de medida directamente de Odoo, eliminando la necesidad de mantener el archivo `ingredientes.csv` manualmente.
+
+### 2. Flujo de Generación de Órdenes de Compra (Escritura hacia Odoo)
+En lugar de depender exclusivamente de descargas de archivos Excel o CSV desde la pestaña de **Pedidos por Proveedor**, el dashboard puede interactuar directamente con el módulo de compras de Odoo:
+1. **Petición Segura:** Al hacer clic en "Aprobar Orden" (desde la interfaz o mediante el chatbot), se envía una solicitud a una ruta de API de Next.js (`/api/purchase-order`).
+2. **Creación en Odoo (`purchase.order`):** El servidor de Next.js se conecta a la API externa de Odoo usando credenciales seguras (usuario, contraseña/API token y base de datos) y crea una orden de compra en estado de **Borrador (Draft PO)**.
+3. **Detalle de la Orden (`purchase.order.line`):** Se añade cada línea del pedido con el ID del producto correspondiente en Odoo y la cantidad de formatos de compra recomendados que fueron validados en el dashboard.
+
+### 3. Métodos Técnicos de Conexión
+* **Llamadas Directas (XML-RPC):** Odoo expone por defecto endpoints en `/xmlrpc/2/common` (para autenticación) y `/xmlrpc/2/object` (para manipulación de modelos de datos). Es compatible con cualquier cliente HTTP estándar en JavaScript.
+* **REST API (Odoo v16+ / Módulos OCA):** Si se dispone de la versión Enterprise de Odoo o del módulo comunitario de REST API (OCA), se pueden realizar llamadas HTTP REST estándar (`GET`, `POST`), lo que simplifica la integración y permite autenticación mediante Bearer Tokens o OAuth.
+* **Middleware Intermedio (Opcional):** Si se desea desacoplar el frontend del ERP, se puede construir una pequeña función Serverless en Node.js que actúe como pasarela de comunicación, formateando las solicitudes del dashboard al esquema nativo de Odoo.
