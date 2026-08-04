@@ -55,8 +55,8 @@ npm start
 Para cumplir con las metas operativas del negocio, la lógica interna del sistema en [`src/lib/logic.ts`](src/lib/logic.ts) realiza la consolidación de datos bajo los siguientes supuestos técnicos:
 
 ### 1. Proyección de Consumo (Próxima Semana)
-* **Algoritmo**: Promedio móvil simple. Se calcula sumando el consumo histórico de las últimas 6 semanas (`consumo_historico.csv`) de cada ingrediente en cada sucursal y dividiéndolo por 6.
-* **Justificación**: Proporciona una base suavizada y robusta que amortigua picos atípicos en ventas de semanas previas, adecuada para insumos frescos y secos.
+* **Algoritmo**: Promedio móvil ponderado. Se calcula ponderando el consumo de las últimas 6 semanas (de S1 a S6) con los pesos `[0.05, 0.10, 0.15, 0.20, 0.25, 0.25]`.
+* **Justificación**: Da mayor peso y relevancia a las semanas más recientes (S5 y S6, con 25% de peso cada una) para adaptarse a las tendencias actuales de consumo de la pizzería, sin perder la suavización histórica que aportan las primeras semanas.
 
 ### 2. Necesidad Real Física
 * **Fórmula**: `Necesidad Real (Unidad Base) = Consumo Proyectado - Inventario Actual`.
