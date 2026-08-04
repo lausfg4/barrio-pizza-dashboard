@@ -95,24 +95,6 @@ export default function Layout({
               <span>Re-Calcular Alertas</span>
             </button>
           </div>
-
-          {/* Adjustments & Support Links */}
-          <div className="border-t border-[#e4beb9]/30 pt-3">
-            <ul className="flex flex-col text-xs font-semibold">
-              <li>
-                <a href="#settings" className="flex items-center gap-3 px-6 py-3 text-[#5f5e5e] hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-all">
-                  <Settings className="w-4 h-4" />
-                  <span>Ajustes</span>
-                </a>
-              </li>
-              <li>
-                <a href="#support" className="flex items-center gap-3 px-6 py-3 text-[#5f5e5e] hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-all">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Soporte</span>
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
       </aside>
 
@@ -144,10 +126,6 @@ export default function Layout({
               Re-Calcular Alertas
             </button>
             <div className="flex items-center gap-2 text-[#5f5e5e]">
-              <button className="p-2 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors relative">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#b7131a] rounded-full"></span>
-              </button>
               <button className="p-1 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors flex items-center justify-center font-bold bg-[#e4e2e1] w-8 h-8 text-xs text-[#271716]">
                 L
               </button>
