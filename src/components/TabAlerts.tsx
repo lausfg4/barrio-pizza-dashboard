@@ -27,17 +27,19 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
     return Array.from(new Set(alerts.map(a => a.sucursal)));
   }, [alerts]);
 
-  // Contadores para las KPI Cards
+  // Contadores para las KPI Cards (dinámicos según la sucursal seleccionada)
   const kpis = useMemo(() => {
-    const sucursalesCount = sucursales.length;
+    const sucursalesCount = selectedSucursal === 'all' ? sucursales.length : 1;
     let critico = 0;
     let sobrepedido = 0;
     let olvidado = 0;
 
     alerts.forEach(a => {
-      if (a.alerta_tipo === 'Riesgo de Quiebre') critico++;
-      else if (a.alerta_tipo === 'Sobre-pedido') sobrepedido++;
-      else if (a.alerta_tipo === 'Insumo Olvidado') olvidado++;
+      if (selectedSucursal === 'all' || a.sucursal === selectedSucursal) {
+        if (a.alerta_tipo === 'Riesgo de Quiebre') critico++;
+        else if (a.alerta_tipo === 'Sobre-pedido') sobrepedido++;
+        else if (a.alerta_tipo === 'Insumo Olvidado') olvidado++;
+      }
     });
 
     return {
@@ -46,7 +48,7 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
       sobrepedido,
       olvidado
     };
-  }, [alerts, sucursales]);
+  }, [alerts, sucursales, selectedSucursal]);
 
   // Manejar el cambio inline de cantidad de pedido
   const handleCantidadChange = (ingredienteId: string, sucursal: string, val: number) => {
@@ -100,9 +102,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{kpis.sucursales} Active</div>
-            <div className="flex items-center text-[#b7131a] bg-[#fff0ee] px-2 py-0.5 rounded text-xs font-bold">
-              <TrendingUp className="w-3.5 h-3.5 mr-1" /> 100%
-            </div>
           </div>
         </div>
 
@@ -117,12 +116,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between relative z-10">
             <div className="text-2xl font-bold text-[#271716]">{kpis.critico} items</div>
-            <button 
-              onClick={() => setSelectedAlertaTipo('critico')}
-              className="text-[#b7131a] text-xs font-bold underline cursor-pointer hover:text-[#93000d] bg-transparent border-none"
-            >
-              Ver Detalle
-            </button>
           </div>
         </div>
 
@@ -136,7 +129,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{kpis.sobrepedido} items</div>
-            <span className="text-xs font-semibold text-[#5f5e5e]">Analizado</span>
           </div>
         </div>
 
@@ -150,7 +142,6 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{kpis.olvidado} items</div>
-            <span className="text-xs font-semibold text-[#5f5e5e] hover:underline cursor-pointer" onClick={() => setSelectedAlertaTipo('olvido')}>Pendiente</span>
           </div>
         </div>
       </div>

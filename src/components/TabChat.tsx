@@ -90,9 +90,10 @@ export default function TabChat({ alerts, onApproveOrder }: TabChatProps) {
 
     try {
       // Formatear el estado actual de las alertas como contexto para el modelo
-      const contextSummary = alerts.map(a => 
-        `Sucursal: ${a.sucursal} | Insumo: ${a.nombre} (ID: ${a.ingrediente_id}) | Stock Actual: ${a.stock_actual_unidad_base} | Necesidad Real: ${a.necesidad_real} | Formato: ${a.formato_compra} (equivale a ${a.unidad_base_por_formato} ${a.unidad_base})`
-      ).join('\n');
+      const contextSummary = alerts.map(a => {
+        const cantidadRecomendadaFormatos = Math.ceil(a.necesidad_real / a.unidad_base_por_formato);
+        return `Sucursal: ${a.sucursal} | Insumo: ${a.nombre} (ID: ${a.ingrediente_id}) | Stock Actual: ${a.stock_actual_unidad_base} | Necesidad Real: ${a.necesidad_real} | Formato: ${a.formato_compra} (equivale a ${a.unidad_base_por_formato} ${a.unidad_base}) | Cantidad Recomendada a Pedir (en formatos completos): ${cantidadRecomendadaFormatos}`;
+      }).join('\n');
 
       const systemInstruction = `
 Eres un asistente inteligente para la cadena de pizzerías "Barrio Pizza". Tienes acceso en tiempo real a los siguientes datos de stock y alertas:
@@ -101,14 +102,14 @@ ${contextSummary}
 Cuando el usuario te pida sugerir u ordenar un insumo, debes proponer el pedido basándote en la columna "Necesidad Real". 
 Si propones un pedido, debes finalizar SIEMPRE tu mensaje con un tag de formato EXACTO en una línea nueva al final del mensaje:
 [BORRADOR: Proveedor | Destino | Insumo | Cantidad | ingrediente_id]
-Donde:
+Where:
 - Proveedor: Nombre del proveedor sugerido (Distribuidora DPA, Quesos de la Villa, o Frutas & Más).
 - Destino: Nombre de la sucursal de destino.
 - Insumo: Nombre del ingrediente.
-- Cantidad: Cantidad recomendada a pedir en formatos de compra (redondear a entero hacia arriba).
+- Cantidad: Cantidad recomendada a pedir en formatos de compra (DEBES usar exactamente el valor numérico de "Cantidad Recomendada a Pedir (en formatos completos)" provisto arriba para este insumo y sucursal).
 - ingrediente_id: El ID técnico del ingrediente (ej. mozzarella, harina_00, etc.).
 
-Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 11 | mozzarella]
+Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18 | mozzarella]
 `;
 
       const ai = new GoogleGenerativeAI(apiKey);
