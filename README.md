@@ -48,6 +48,11 @@ npm run build
 npm start
 ```
 
+### Paso 5: Iniciar Sesión (Credenciales de Acceso)
+Al abrir el dashboard (ya sea localmente o en el servidor), la plataforma solicitará un inicio de sesión administrativo para proteger los datos de inventario. Las credenciales de acceso son:
+* **Usuario:** `admin`
+* **Contraseña:** `admin`
+
 ---
 
 ## 📊 Supuestos y Lógica de Negocio Aplicada
