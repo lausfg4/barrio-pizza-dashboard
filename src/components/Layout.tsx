@@ -139,8 +139,8 @@ export default function Layout({
               Re-Calcular Alertas
             </button>
             <div className="flex items-center gap-2 text-[#5f5e5e]">
-              <button className="p-1 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors flex items-center justify-center font-bold bg-[#e4e2e1] w-8 h-8 text-xs text-[#271716]">
-                L
+              <button className="p-1 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors flex items-center justify-center font-bold bg-[#e4e2e1] w-8 h-8 text-xs text-[#271716]" title="Administrador">
+                A
               </button>
             </div>
           </div>
