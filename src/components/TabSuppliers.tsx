@@ -93,30 +93,58 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
     return list;
   }, [alerts]);
 
-  // Exportar datos a CSV
-  const handleExportCSV = (order: typeof orders[0]) => {
-    const headers = ['Insumo', 'Cantidad Pedida', 'Formato', 'Costo Estimado (USD)'];
-    const rows = order.items.map(i => [
-      i.ingrediente,
-      i.cantidadFormatos,
-      i.formato,
-      i.costoEstimado.toFixed(2)
-    ]);
+  // Exportar datos a un archivo Excel formateado (.xls HTML)
+  const handleExportExcel = (order: typeof orders[0]) => {
+    const htmlContent = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #271716; }
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+    th { background-color: #b7131a; color: #ffffff; font-weight: bold; text-align: left; padding: 12px; border: 1px solid #e4beb9; }
+    td { padding: 12px; border: 1px solid #e4beb9; font-size: 13px; }
+    .title { font-size: 20px; font-weight: bold; color: #b7131a; margin-bottom: 5px; }
+    .subtitle { font-size: 13px; color: #5f5e5e; margin-bottom: 25px; font-weight: bold; }
+    .total-row { font-weight: bold; background-color: #fff0ee; color: #b7131a; }
+    .number { text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="title">Barrio Pizza — Orden de Compra</div>
+  <div class="subtitle">Proveedor: ${order.proveedor}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Insumo</th>
+        <th class="number">Cantidad Pedida</th>
+        <th class="number">Costo Estimado (USD)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${order.items.map(item => `
+        <tr>
+          <td>${item.ingrediente}</td>
+          <td class="number">${item.cantidadFormatos} ${item.formato}</td>
+          <td class="number">$${item.costoEstimado.toFixed(2)}</td>
+        </tr>
+      `).join('')}
+      <tr class="total-row">
+        <td>Total General Estimado</td>
+        <td class="number">-</td>
+        <td class="number">$${order.totalPedido.toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>
+    `;
 
-    const csvContent = [
-      `Proveedor: ${order.proveedor}`,
-      `Orden de Compra: ${order.codigoOrden}`,
-      `Fecha Estimada: ${order.fechaEntrega}`,
-      '',
-      headers.join(','),
-      ...rows.map(r => r.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Pedido_${order.proveedor.replace(/\s+/g, '_')}_${order.codigoOrden}.csv`);
+    link.setAttribute('download', `Pedido_${order.proveedor.replace(/\s+/g, '_')}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -141,17 +169,6 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
           {orders.map((order, index) => {
             const isExpanded = expandedIndex === index;
             
-            // Iconos y colores de estado
-            let StatusIcon = Clock;
-            let statusClass = 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/20';
-            if (order.estado === 'En camino') {
-              StatusIcon = Truck;
-              statusClass = 'bg-[#D97706]/10 text-[#D97706] border-[#D97706]/20';
-            } else if (order.estado === 'Entregado') {
-              StatusIcon = CheckCircle2;
-              statusClass = 'bg-[#10B981]/10 text-[#059669] border-[#10B981]/20';
-            }
-
             return (
               <div 
                 key={order.proveedor}
@@ -169,21 +186,10 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-[#271716]">{order.proveedor}</h3>
-                      <p className="text-[11px] text-[#5f5e5e] font-semibold flex items-center gap-1">
-                        <span>Orden: <span className="font-mono">{order.codigoOrden}</span></span>
-                        <span>•</span>
-                        <span>Entrega: {order.fechaEntrega}</span>
-                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 self-end md:self-auto">
-                    {/* Status Badge */}
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase ${statusClass}`}>
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      <span>{order.estado}</span>
-                    </span>
-
                     {/* Total Order Cost */}
                     <div className="text-right">
                       <p className="text-[10px] text-[#5f5e5e] font-bold uppercase tracking-wider">Total Estimado</p>
@@ -226,15 +232,8 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
                     {/* Export Actions */}
                     <div className="flex justify-end gap-2.5">
                       <button
-                        onClick={() => handleExportCSV(order)}
-                        className="bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/50 text-[#b7131a] text-xs font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Exportar CSV</span>
-                      </button>
-                      <button
-                        onClick={() => handleExportCSV(order)} // Reutilizamos formato CSV por simplicidad
-                        className="bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/50 text-[#b7131a] text-xs font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                        onClick={() => handleExportExcel(order)}
+                        className="bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/50 text-[#b7131a] text-xs font-bold py-2.5 px-5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
                       >
                         <FileText className="w-4 h-4" />
                         <span>Exportar Excel</span>
