@@ -56,7 +56,5 @@ export interface ProveedorPedido {
     ingrediente: string;
     cantidadFormatos: number;
     formato: string;
-    costoEstimado: number;
   }>;
-  totalPedido: number;
 }
