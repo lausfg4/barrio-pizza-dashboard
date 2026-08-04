@@ -17,6 +17,7 @@ import {
 interface TabChatProps {
   alerts: AlertaConsolidada[];
   onApproveOrder: (sucursal: string, ingredienteId: string, cantidad: number) => void;
+  onShowToast: (message: string, type?: 'success' | 'info' | 'error') => void;
 }
 
 interface Message {
@@ -32,7 +33,7 @@ interface Message {
   };
 }
 
-export default function TabChat({ alerts, onApproveOrder }: TabChatProps) {
+export default function TabChat({ alerts, onApproveOrder, onShowToast }: TabChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
@@ -306,8 +307,7 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
                     <div className="flex gap-2 mt-2">
                       <button 
                         onClick={() => {
-                          // Simplemente enfocar o avisar al usuario para modificarlo en la primera pestaña
-                          alert(`Puedes modificar el valor de ${m.draft?.insumo} directamente en la primera pestaña (Resumen & Alertas).`);
+                          onShowToast(`Puedes modificar el valor de ${m.draft?.insumo} directamente en la primera pestaña (Resumen & Alertas).`, 'info');
                         }}
                         className="flex-1 bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#5f5e5e] text-xs font-bold py-2 rounded-lg transition-all"
                       >

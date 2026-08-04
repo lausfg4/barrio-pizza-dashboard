@@ -10,7 +10,7 @@ import TabAlerts from '../components/TabAlerts';
 import TabAnalytics from '../components/TabAnalytics';
 import TabSuppliers from '../components/TabSuppliers';
 import TabChat from '../components/TabChat';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>('alerts');
@@ -20,6 +20,9 @@ export default function DashboardPage() {
   // Estados de autenticación
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
+
+  // Estado de Toast personalizado
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
   // Estados originales cargados de los CSV
   const [ingredientes, setIngredientes] = useState<Ingrediente[]>([]);
@@ -65,6 +68,20 @@ export default function DashboardPage() {
     loadInitialData();
   }, []);
 
+  // Limpiar Toast automáticamente después de 4 segundos
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    setToast({ message, type });
+  };
+
   const handleLoginSuccess = () => {
     sessionStorage.setItem('isLoggedIn', 'true');
     setIsLoggedIn(true);
@@ -83,7 +100,7 @@ export default function DashboardPage() {
       const processed = processAlerts(ingredientes, consumo, inventario, ordenes);
       setAlerts(processed);
       setIsLoading(false);
-      alert('Alertas recalculadas con éxito a partir de los archivos de inventario.');
+      showToast('Alertas recalculadas con éxito a partir de los archivos de inventario.', 'success');
     }, 500);
   };
 
@@ -100,6 +117,7 @@ export default function DashboardPage() {
     });
 
     setAlerts(recalculateAlerts(updated));
+    showToast(`Pedido aprobado correctamente para ${sucursal}.`, 'success');
   };
 
   // Renderizar la vista activa
@@ -137,7 +155,7 @@ export default function DashboardPage() {
       case 'suppliers':
         return <TabSuppliers alerts={alerts} />;
       case 'chat':
-        return <TabChat alerts={alerts} onApproveOrder={handleApproveOrder} />;
+        return <TabChat alerts={alerts} onApproveOrder={handleApproveOrder} onShowToast={showToast} />;
       default:
         return <TabAlerts alerts={alerts} setAlerts={setAlerts} />;
     }
@@ -159,13 +177,44 @@ export default function DashboardPage() {
   }
 
   return (
-    <Layout 
-      activeTab={activeTab} 
-      setActiveTab={setActiveTab} 
-      onRecalculate={handleRecalculate}
-      onLogout={handleLogout}
-    >
-      {renderContent()}
-    </Layout>
+    <>
+      {/* Dynamic Toast Styles */}
+      <style>{`
+        @keyframes slideInRight {
+          from { transform: translate(120%, 0); opacity: 0; }
+          to { transform: translate(0, 0); opacity: 1; }
+        }
+        .animate-toast-slide {
+          animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+
+      {/* Floating toast notification */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 animate-toast-slide bg-white border border-[#e4beb9]/80 rounded-2xl p-4 shadow-[0px_10px_28px_rgba(183,28,28,0.06)] flex items-center gap-3 max-w-sm">
+          <div className="w-8 h-8 rounded-full bg-[#fff0ee] flex items-center justify-center flex-shrink-0 text-[#b7131a]">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div className="flex-1 pr-2">
+            <p className="text-xs font-bold text-[#271716] leading-snug">{toast.message}</p>
+          </div>
+          <button 
+            onClick={() => setToast(null)}
+            className="text-[#5f5e5e] hover:text-[#b7131a] text-xs font-bold w-5 h-5 rounded-full hover:bg-[#fff0ee]/60 transition-colors flex items-center justify-center"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      <Layout 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onRecalculate={handleRecalculate}
+        onLogout={handleLogout}
+      >
+        {renderContent()}
+      </Layout>
+    </>
   );
 }
