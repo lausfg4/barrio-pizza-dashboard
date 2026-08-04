@@ -23,14 +23,15 @@ interface TabChatProps {
 interface Message {
   role: 'user' | 'model';
   content: string;
-  draft?: {
+  drafts?: Array<{
     proveedor: string;
     destino: string;
     insumo: string;
     cantidad: number;
     ingredienteId: string;
     formato: string;
-  };
+    approved?: boolean;
+  }>;
 }
 
 export default function TabChat({ alerts, onApproveOrder, onShowToast }: TabChatProps) {
@@ -92,16 +93,19 @@ Eres un asistente inteligente para la cadena de pizzerías "Barrio Pizza". Tiene
 ${contextSummary}
 
 Cuando el usuario te pida sugerir u ordenar un insumo, debes proponer el pedido basándote en la columna "Necesidad Real". 
-Si propones un pedido, debes finalizar SIEMPRE tu mensaje con un tag de formato EXACTO en una línea nueva al final del mensaje:
+Si propones pedidos, debes finalizar tu mensaje incluyendo un tag de formato EXACTO en una línea nueva al final del mensaje POR CADA sucursal y pedido propuesto (puedes incluir múltiples tags si se requieren pedidos para múltiples sucursales):
 [BORRADOR: Proveedor | Destino | Insumo | Cantidad | ingrediente_id]
-Where:
+
+Donde:
 - Proveedor: Nombre del proveedor sugerido (Distribuidora DPA, Quesos de la Villa, o Frutas & Más).
 - Destino: Nombre de la sucursal de destino.
 - Insumo: Nombre del ingrediente.
 - Cantidad: Cantidad recomendada a pedir en formatos de compra (DEBES usar exactamente el valor numérico de "Cantidad Recomendada a Pedir (en formatos completos)" provisto arriba para este insumo y sucursal).
 - ingrediente_id: El ID técnico del ingrediente (ej. mozzarella, harina_00, etc.).
 
-Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18 | mozzarella]
+Ejemplo de tags si varias sucursales lo necesitan:
+[BORRADOR: Quesos de la Villa | Brisas del Golf | Mozzarella | 18 | mozzarella]
+[BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 14 | mozzarella]
 `;
 
       const ai = new GoogleGenerativeAI(apiKey);
@@ -146,33 +150,37 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
 
       const replyText = responseText;
 
-      // Interceptar tag de borrador de orden en la respuesta
-      const draftRegex = /\[BORRADOR:\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/i;
-      const match = replyText.match(draftRegex);
+      // Interceptar tags de borrador de orden en la respuesta (pueden ser múltiples)
+      const draftRegexGlobal = /\[BORRADOR:\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/gi;
+      const draftRegexSingle = /\[BORRADOR:\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/i;
 
-      let cleanReply = replyText;
-      let draftObj = undefined;
+      const matches = replyText.match(draftRegexGlobal);
+      let cleanReply = replyText.replace(draftRegexGlobal, '').trim();
+      let draftsList: Message['drafts'] = undefined;
 
-      if (match) {
-        // Ocultar el tag técnico de la respuesta visible
-        cleanReply = replyText.replace(draftRegex, '').trim();
-        
-        const targetAlert = alerts.find(a => a.ingrediente_id === match[5].trim());
-
-        draftObj = {
-          proveedor: match[1].trim(),
-          destino: match[2].trim(),
-          insumo: match[3].trim(),
-          cantidad: parseInt(match[4].trim(), 10) || 0,
-          ingredienteId: match[5].trim(),
-          formato: targetAlert ? targetAlert.formato_compra : 'formatos'
-        };
+      if (matches && matches.length > 0) {
+        draftsList = [];
+        for (const mStr of matches) {
+          const singleMatch = mStr.match(draftRegexSingle);
+          if (singleMatch) {
+            const ingredienteId = singleMatch[5].trim();
+            const targetAlert = alerts.find(a => a.ingrediente_id === ingredienteId);
+            draftsList.push({
+              proveedor: singleMatch[1].trim(),
+              destino: singleMatch[2].trim(),
+              insumo: singleMatch[3].trim(),
+              cantidad: parseInt(singleMatch[4].trim(), 10) || 0,
+              ingredienteId: ingredienteId,
+              formato: targetAlert ? targetAlert.formato_compra : 'formatos'
+            });
+          }
+        }
       }
 
       setMessages(prev => [...prev, {
         role: 'model',
         content: cleanReply,
-        draft: draftObj
+        drafts: draftsList
       }]);
 
     } catch (error: any) {
@@ -187,16 +195,28 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
   };
 
   // Aprobar borrador desde el chat
-  const handleApproveDraft = (msgIndex: number, draft: NonNullable<Message['draft']>) => {
+  const handleApproveDraft = (msgIndex: number, draftIdx: number) => {
+    const message = messages[msgIndex];
+    if (!message || !message.drafts) return;
+
+    const draft = message.drafts[draftIdx];
+    if (!draft || draft.approved) return;
+
     onApproveOrder(draft.destino, draft.ingredienteId, draft.cantidad);
-    
+    onShowToast(`Orden aprobada: ${draft.cantidad} ${draft.formato} de ${draft.insumo} para ${draft.destino}`, 'success');
+
     // Marcar como aprobado en el chat local
     setMessages(prev => prev.map((m, idx) => {
       if (idx === msgIndex) {
+        const nextDrafts = m.drafts ? m.drafts.map((d, dIdx) => {
+          if (dIdx === draftIdx) {
+            return { ...d, approved: true };
+          }
+          return d;
+        }) : [];
         return {
           ...m,
-          content: `${m.content}\n\n✅ **Pedido de ${draft.cantidad} ${draft.formato} de ${draft.insumo} aprobado y guardado en base de datos.**`,
-          draft: undefined // Quitar botones interactivos
+          drafts: nextDrafts
         };
       }
       return m;
@@ -269,53 +289,78 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
                 </div>
               </div>
 
-              {/* Interactive Draft Card if applicable */}
-              {isAssistant && m.draft && (
-                <div className="ml-11 max-w-md bg-white border-2 border-[#b7131a] rounded-2xl overflow-hidden shadow-md">
-                  <div className="bg-[#fff0ee] px-4 py-3 border-b border-[#e4beb9]/40 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-[#b7131a]" />
-                      <span className="text-xs font-bold text-[#b7131a]">Borrador de Pedido</span>
-                    </div>
-                    <span className="text-[9px] font-bold bg-[#b7131a]/15 text-[#b7131a] px-2 py-0.5 rounded uppercase">Recomendado</span>
-                  </div>
+              {/* Interactive Draft Cards if applicable */}
+              {isAssistant && m.drafts && m.drafts.length > 0 && (
+                <div className="ml-11 flex flex-col gap-3 max-w-md w-full">
+                  {m.drafts.map((draft, dIdx) => (
+                    <div key={dIdx} className={`bg-white border rounded-2xl overflow-hidden shadow-md transition-all ${
+                      draft.approved ? 'border-[#10B981]' : 'border-[#b7131a]'
+                    }`}>
+                      <div className={`px-4 py-3 border-b flex justify-between items-center ${
+                        draft.approved ? 'bg-[#ecfdf5] border-[#10B981]/20' : 'bg-[#fff0ee] border-[#e4beb9]/40'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <ShoppingBag className={`w-4 h-4 ${draft.approved ? 'text-[#059669]' : 'text-[#b7131a]'}`} />
+                          <span className={`text-xs font-bold ${draft.approved ? 'text-[#059669]' : 'text-[#b7131a]'}`}>
+                            Borrador de Pedido
+                          </span>
+                        </div>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
+                          draft.approved 
+                            ? 'bg-[#10B981]/15 text-[#059669]' 
+                            : 'bg-[#b7131a]/15 text-[#b7131a]'
+                        }`}>
+                          {draft.approved ? 'Aprobado' : 'Recomendado'}
+                        </span>
+                      </div>
 
-                  <div className="p-4 flex flex-col gap-2">
-                    <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
-                      <span className="text-[#5f5e5e]">Proveedor:</span>
-                      <span className="font-bold text-[#271716]">{m.draft.proveedor}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
-                      <span className="text-[#5f5e5e]">Destino:</span>
-                      <span className="font-bold text-[#271716]">{m.draft.destino}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
-                      <span className="text-[#5f5e5e]">Insumo:</span>
-                      <span className="font-bold text-[#271716]">{m.draft.insumo}</span>
-                    </div>
-                    <div className="flex justify-between pb-1.5 text-xs font-medium">
-                      <span className="text-[#5f5e5e]">Cantidad Sugerida:</span>
-                      <span className="font-bold text-[#b7131a]">{m.draft.cantidad} {m.draft.formato}</span>
-                    </div>
+                      <div className="p-4 flex flex-col gap-2">
+                        <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
+                          <span className="text-[#5f5e5e]">Proveedor:</span>
+                          <span className="font-bold text-[#271716]">{draft.proveedor}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
+                          <span className="text-[#5f5e5e]">Destino:</span>
+                          <span className="font-bold text-[#271716]">{draft.destino}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
+                          <span className="text-[#5f5e5e]">Insumo:</span>
+                          <span className="font-bold text-[#271716]">{draft.insumo}</span>
+                        </div>
+                        <div className="flex justify-between pb-1.5 text-xs font-medium">
+                          <span className="text-[#5f5e5e]">Cantidad Sugerida:</span>
+                          <span className={`font-bold ${draft.approved ? 'text-[#059669]' : 'text-[#b7131a]'}`}>
+                            {draft.cantidad} {draft.formato}
+                          </span>
+                        </div>
 
-                    <div className="flex gap-2 mt-2">
-                      <button 
-                        onClick={() => {
-                          onShowToast(`Puedes modificar el valor de ${m.draft?.insumo} directamente en la primera pestaña (Resumen & Alertas).`, 'info');
-                        }}
-                        className="flex-1 bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#5f5e5e] text-xs font-bold py-2 rounded-lg transition-all"
-                      >
-                        Modificar
-                      </button>
-                      <button 
-                        onClick={() => handleApproveDraft(idx, m.draft!)}
-                        className="flex-1 bg-[#b7131a] hover:bg-[#93000d] text-white text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Aprobar Orden</span>
-                      </button>
+                        {draft.approved ? (
+                          <div className="flex items-center justify-center gap-1.5 bg-[#ecfdf5] border border-[#10B981]/30 py-2 rounded-xl text-[#059669] text-xs font-bold mt-2">
+                            <Check className="w-4 h-4" />
+                            <span>Pedido Guardado en Base de Datos</span>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 mt-2">
+                            <button 
+                              onClick={() => {
+                                onShowToast(`Puedes modificar el valor de ${draft.insumo} directamente en la primera pestaña (Resumen & Alertas).`, 'info');
+                              }}
+                              className="flex-1 bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#5f5e5e] text-xs font-bold py-2 rounded-lg transition-all"
+                            >
+                              Modificar
+                            </button>
+                            <button 
+                              onClick={() => handleApproveDraft(idx, dIdx)}
+                              className="flex-1 bg-[#b7131a] hover:bg-[#93000d] text-white text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Aprobar Orden</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </div>
