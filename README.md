@@ -25,7 +25,7 @@ Para utilizar la pestaña de **Asistente IA**, necesitas proporcionar una API Ke
 ```env
 NEXT_PUBLIC_GEMINI_API_KEY=tu_api_key_aqui
 ```
-*Nota: Si no posees una clave, el dashboard iniciará normalmente y te permitirá interactuar con el resto de las pestañas de forma local, además el propio chat te ofrecerá un widget visual para introducir la clave directamente desde la interfaz.*
+*Nota: Si no posees una clave, el dashboard iniciará normalmente y te permitirá interactuar con el resto de las pestañas de forma local.*
 
 ### Paso 3: Ejecutar en Modo Desarrollo
 Inicia el servidor local de desarrollo:
