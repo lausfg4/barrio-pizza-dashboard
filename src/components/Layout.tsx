@@ -119,15 +119,6 @@ export default function Layout({
             <h2 className="text-md font-bold text-[#271716] hidden md:block">
               Barrio Pizza — Control de Órdenes
             </h2>
-            {/* Search Input */}
-            <div className="relative w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5f5e5e]" />
-              <input
-                type="text"
-                placeholder="Buscar insumos..."
-                className="w-full bg-[#fff0ee]/40 border border-[#e4beb9]/60 rounded-full py-1.5 pl-9 pr-4 text-xs font-medium focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a] transition-all text-[#271716]"
-              />
-            </div>
           </div>
 
           {/* Action Bar */}
