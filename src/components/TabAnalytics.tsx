@@ -188,10 +188,9 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
       };
     } else if (activeAlert.alerta_tipo === 'Sobre-pedido') {
       const exceso = ped - nec;
-      const perecederoWarn = activeAlert.es_perecedero === 'Si' ? ' → riesgo de merma.' : ' → sobre-stock inmovilizado.';
       return {
         type: 'excess',
-        message: `ALERTA: ${sucursal} está pidiendo ${exceso.toFixed(1)} ${unidad} de ${ingrediente} de más en comparación a lo proyectado (${proj.toFixed(1)} ${unidad})${perecederoWarn}`
+        message: `ALERTA: ${sucursal} está pidiendo ${exceso.toFixed(1)} ${unidad} de ${ingrediente} de más en comparación a lo proyectado (${proj.toFixed(1)} ${unidad}) → riesgo de merma.`
       };
     } else {
       return {
