@@ -94,10 +94,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
           </div>
 
-          {/* Hint details */}
-          <div className="text-[10px] text-center text-[#5f5e5e] font-medium mt-1">
-            Credenciales de acceso rápido: <span className="font-bold text-[#b7131a] select-all">admin / admin</span>
-          </div>
 
           {/* Submit Button */}
           <button
