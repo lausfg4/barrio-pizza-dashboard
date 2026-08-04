@@ -70,7 +70,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5f5e5e]" />
               <input
                 type="text"
-                placeholder="Ingresa tu usuario (admin)"
+                placeholder="Ingresa tu usuario"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -85,7 +85,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5f5e5e]" />
               <input
                 type="password"
-                placeholder="Ingresa tu contraseña (admin)"
+                placeholder="Ingresa tu contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
