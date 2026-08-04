@@ -25,12 +25,14 @@ interface Message {
   content: string;
   drafts?: Array<{
     proveedor: string;
-    destino: string;
     insumo: string;
-    cantidad: number;
     ingredienteId: string;
     formato: string;
-    approved?: boolean;
+    destinos: Array<{
+      sucursal: string;
+      cantidad: number;
+      approved?: boolean;
+    }>;
   }>;
 }
 
@@ -159,22 +161,46 @@ Ejemplo de tags si varias sucursales lo necesitan:
       let draftsList: Message['drafts'] = undefined;
 
       if (matches && matches.length > 0) {
-        draftsList = [];
+        const groups = new Map<string, {
+          proveedor: string;
+          insumo: string;
+          ingredienteId: string;
+          formato: string;
+          destinos: Array<{ sucursal: string; cantidad: number; approved?: boolean }>;
+        }>();
+
         for (const mStr of matches) {
           const singleMatch = mStr.match(draftRegexSingle);
           if (singleMatch) {
+            const proveedor = singleMatch[1].trim();
+            const sucursal = singleMatch[2].trim();
+            const insumo = singleMatch[3].trim();
+            const cantidad = parseInt(singleMatch[4].trim(), 10) || 0;
             const ingredienteId = singleMatch[5].trim();
+
+            const key = `${proveedor}|||${ingredienteId}`;
             const targetAlert = alerts.find(a => a.ingrediente_id === ingredienteId);
-            draftsList.push({
-              proveedor: singleMatch[1].trim(),
-              destino: singleMatch[2].trim(),
-              insumo: singleMatch[3].trim(),
-              cantidad: parseInt(singleMatch[4].trim(), 10) || 0,
-              ingredienteId: ingredienteId,
-              formato: targetAlert ? targetAlert.formato_compra : 'formatos'
+            const formato = targetAlert ? targetAlert.formato_compra : 'formatos';
+
+            if (!groups.has(key)) {
+              groups.set(key, {
+                proveedor,
+                insumo,
+                ingredienteId,
+                formato,
+                destinos: []
+              });
+            }
+
+            groups.get(key)!.destinos.push({
+              sucursal,
+              cantidad,
+              approved: false
             });
           }
         }
+
+        draftsList = Array.from(groups.values());
       }
 
       setMessages(prev => [...prev, {
@@ -195,22 +221,28 @@ Ejemplo de tags si varias sucursales lo necesitan:
   };
 
   // Aprobar borrador desde el chat
-  const handleApproveDraft = (msgIndex: number, draftIdx: number) => {
+  const handleApproveDraftGroup = (msgIndex: number, draftIdx: number) => {
     const message = messages[msgIndex];
     if (!message || !message.drafts) return;
 
-    const draft = message.drafts[draftIdx];
-    if (!draft || draft.approved) return;
+    const group = message.drafts[draftIdx];
+    if (!group) return;
 
-    onApproveOrder(draft.destino, draft.ingredienteId, draft.cantidad);
-    onShowToast(`Orden aprobada: ${draft.cantidad} ${draft.formato} de ${draft.insumo} para ${draft.destino}`, 'success');
+    group.destinos.forEach(dest => {
+      if (!dest.approved) {
+        onApproveOrder(dest.sucursal, group.ingredienteId, dest.cantidad);
+      }
+    });
+
+    onShowToast(`Órdenes aprobadas para todas las sucursales de ${group.insumo}`, 'success');
 
     // Marcar como aprobado en el chat local
     setMessages(prev => prev.map((m, idx) => {
       if (idx === msgIndex) {
         const nextDrafts = m.drafts ? m.drafts.map((d, dIdx) => {
           if (dIdx === draftIdx) {
-            return { ...d, approved: true };
+            const nextDestinos = d.destinos.map(dest => ({ ...dest, approved: true }));
+            return { ...d, destinos: nextDestinos };
           }
           return d;
         }) : [];
@@ -289,78 +321,99 @@ Ejemplo de tags si varias sucursales lo necesitan:
                 </div>
               </div>
 
-              {/* Interactive Draft Cards if applicable */}
+              {/* Interactive Grouped Draft Cards if applicable */}
               {isAssistant && m.drafts && m.drafts.length > 0 && (
                 <div className="ml-11 flex flex-col gap-3 max-w-md w-full">
-                  {m.drafts.map((draft, dIdx) => (
-                    <div key={dIdx} className={`bg-white border rounded-2xl overflow-hidden shadow-md transition-all ${
-                      draft.approved ? 'border-[#10B981]' : 'border-[#b7131a]'
-                    }`}>
-                      <div className={`px-4 py-3 border-b flex justify-between items-center ${
-                        draft.approved ? 'bg-[#ecfdf5] border-[#10B981]/20' : 'bg-[#fff0ee] border-[#e4beb9]/40'
+                  {m.drafts.map((draft, dIdx) => {
+                    const allApproved = draft.destinos.every(d => d.approved);
+
+                    return (
+                      <div key={dIdx} className={`bg-white border rounded-2xl overflow-hidden shadow-md transition-all ${
+                        allApproved ? 'border-[#10B981]' : 'border-[#b7131a]'
                       }`}>
-                        <div className="flex items-center gap-2">
-                          <ShoppingBag className={`w-4 h-4 ${draft.approved ? 'text-[#059669]' : 'text-[#b7131a]'}`} />
-                          <span className={`text-xs font-bold ${draft.approved ? 'text-[#059669]' : 'text-[#b7131a]'}`}>
-                            Borrador de Pedido
-                          </span>
-                        </div>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
-                          draft.approved 
-                            ? 'bg-[#10B981]/15 text-[#059669]' 
-                            : 'bg-[#b7131a]/15 text-[#b7131a]'
+                        {/* Card Header */}
+                        <div className={`px-4 py-3 border-b flex justify-between items-center ${
+                          allApproved ? 'bg-[#ecfdf5] border-[#10B981]/20' : 'bg-[#fff0ee] border-[#e4beb9]/40'
                         }`}>
-                          {draft.approved ? 'Aprobado' : 'Recomendado'}
-                        </span>
-                      </div>
-
-                      <div className="p-4 flex flex-col gap-2">
-                        <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
-                          <span className="text-[#5f5e5e]">Proveedor:</span>
-                          <span className="font-bold text-[#271716]">{draft.proveedor}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
-                          <span className="text-[#5f5e5e]">Destino:</span>
-                          <span className="font-bold text-[#271716]">{draft.destino}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
-                          <span className="text-[#5f5e5e]">Insumo:</span>
-                          <span className="font-bold text-[#271716]">{draft.insumo}</span>
-                        </div>
-                        <div className="flex justify-between pb-1.5 text-xs font-medium">
-                          <span className="text-[#5f5e5e]">Cantidad Sugerida:</span>
-                          <span className={`font-bold ${draft.approved ? 'text-[#059669]' : 'text-[#b7131a]'}`}>
-                            {draft.cantidad} {draft.formato}
+                          <div className="flex items-center gap-2">
+                            <ShoppingBag className={`w-4 h-4 ${allApproved ? 'text-[#059669]' : 'text-[#b7131a]'}`} />
+                            <span className={`text-xs font-bold ${allApproved ? 'text-[#059669]' : 'text-[#b7131a]'}`}>
+                              Borrador de Pedidos Consolidado
+                            </span>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
+                            allApproved 
+                              ? 'bg-[#10B981]/15 text-[#059669]' 
+                              : 'bg-[#b7131a]/15 text-[#b7131a]'
+                          }`}>
+                            {allApproved ? 'Aprobado' : 'Recomendado'}
                           </span>
                         </div>
 
-                        {draft.approved ? (
-                          <div className="flex items-center justify-center gap-1.5 bg-[#ecfdf5] border border-[#10B981]/30 py-2 rounded-xl text-[#059669] text-xs font-bold mt-2">
-                            <Check className="w-4 h-4" />
-                            <span>Pedido Guardado en Base de Datos</span>
+                        {/* Card Body */}
+                        <div className="p-4 flex flex-col gap-3">
+                          <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
+                            <span className="text-[#5f5e5e]">Proveedor:</span>
+                            <span className="font-bold text-[#271716]">{draft.proveedor}</span>
                           </div>
-                        ) : (
-                          <div className="flex gap-2 mt-2">
-                            <button 
-                              onClick={() => {
-                                onShowToast(`Puedes modificar el valor de ${draft.insumo} directamente en la primera pestaña (Resumen & Alertas).`, 'info');
-                              }}
-                              className="flex-1 bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#5f5e5e] text-xs font-bold py-2 rounded-lg transition-all"
-                            >
-                              Modificar
-                            </button>
-                            <button 
-                              onClick={() => handleApproveDraft(idx, dIdx)}
-                              className="flex-1 bg-[#b7131a] hover:bg-[#93000d] text-white text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Aprobar Orden</span>
-                            </button>
+                          <div className="flex justify-between border-b border-[#e4beb9]/20 pb-1.5 text-xs font-medium">
+                            <span className="text-[#5f5e5e]">Insumo:</span>
+                            <span className="font-bold text-[#271716]">{draft.insumo}</span>
                           </div>
-                        )}
+
+                          {/* Destinations List */}
+                          <div className="border border-[#e4beb9]/20 rounded-lg overflow-hidden bg-[#FBF9F6]/50">
+                            <table className="w-full text-left border-collapse text-[11px]">
+                              <thead>
+                                <tr className="bg-[#fff0ee]/10 border-b border-[#e4beb9]/20 text-[#5f5e5e] font-bold">
+                                  <th className="py-2 px-3">Sucursal Destino</th>
+                                  <th className="py-2 px-3 text-right">Cantidad Sugerida</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {draft.destinos.map((dest, destIdx) => (
+                                  <tr key={destIdx} className="border-b border-[#e4beb9]/10 last:border-b-0">
+                                    <td className="py-2 px-3 font-semibold text-[#271716]">
+                                      {dest.sucursal}
+                                    </td>
+                                    <td className="py-2 px-3 text-right font-mono font-bold text-[#b7131a]">
+                                      {dest.cantidad} {draft.formato}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Action Buttons */}
+                          {allApproved ? (
+                            <div className="flex items-center justify-center gap-1.5 bg-[#ecfdf5] border border-[#10B981]/30 py-2.5 rounded-xl text-[#059669] text-xs font-bold mt-1">
+                              <Check className="w-4 h-4" />
+                              <span>Órdenes Guardadas en Base de Datos</span>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 mt-1">
+                              <button 
+                                onClick={() => {
+                                  onShowToast(`Puedes modificar los valores directamente en la primera pestaña (Resumen & Alertas).`, 'info');
+                                }}
+                                className="flex-1 bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#5f5e5e] text-xs font-bold py-2 rounded-lg transition-all"
+                              >
+                                Modificar
+                              </button>
+                              <button 
+                                onClick={() => handleApproveDraftGroup(idx, dIdx)}
+                                className="flex-1 bg-[#b7131a] hover:bg-[#93000d] text-white text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Aprobar Órdenes</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
