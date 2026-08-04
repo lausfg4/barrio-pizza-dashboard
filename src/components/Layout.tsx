@@ -17,6 +17,7 @@ interface LayoutProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onRecalculate: () => void;
+  onLogout?: () => void;
   children: React.ReactNode;
 }
 
@@ -24,6 +25,7 @@ export default function Layout({
   activeTab, 
   setActiveTab, 
   onRecalculate, 
+  onLogout,
   children 
 }: LayoutProps) {
   const menuItems = [
@@ -86,7 +88,7 @@ export default function Layout({
         {/* Sidebar Footer */}
         <div>
           {/* Re-Calculate Button */}
-          <div className="px-4 mb-4">
+          <div className="px-4 mb-3">
             <button
               onClick={onRecalculate}
               className="w-full bg-[#b7131a] hover:bg-[#93000d] text-white py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -95,6 +97,17 @@ export default function Layout({
               <span>Re-Calcular Alertas</span>
             </button>
           </div>
+          {/* Logout Button */}
+          {onLogout && (
+            <div className="px-4 mb-4">
+              <button
+                onClick={onLogout}
+                className="w-full bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#b7131a] py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 

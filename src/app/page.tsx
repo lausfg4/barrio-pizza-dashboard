@@ -5,6 +5,7 @@ import { loadAllDashboardData } from '../lib/csvParser';
 import { processAlerts, recalculateAlerts } from '../lib/logic';
 import { AlertaConsolidada, Consumo, Ingrediente, Inventario, OrdenCompra } from '../types';
 import Layout from '../components/Layout';
+import Login from '../components/Login';
 import TabAlerts from '../components/TabAlerts';
 import TabAnalytics from '../components/TabAnalytics';
 import TabSuppliers from '../components/TabSuppliers';
@@ -15,6 +16,10 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>('alerts');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados de autenticación
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
   // Estados originales cargados de los CSV
   const [ingredientes, setIngredientes] = useState<Ingrediente[]>([]);
@@ -53,8 +58,22 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    // Validar estado de inicio de sesión persistente en la pestaña actual
+    const logged = sessionStorage.getItem('isLoggedIn') === 'true';
+    setIsLoggedIn(logged);
+    setIsCheckingAuth(false);
     loadInitialData();
   }, []);
+
+  const handleLoginSuccess = () => {
+    sessionStorage.setItem('isLoggedIn', 'true');
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('isLoggedIn');
+    setIsLoggedIn(false);
+  };
 
   // Función para volver a procesar alertas con los datos originales del servidor/disco
   const handleRecalculate = () => {
@@ -64,14 +83,12 @@ export default function DashboardPage() {
       const processed = processAlerts(ingredientes, consumo, inventario, ordenes);
       setAlerts(processed);
       setIsLoading(false);
-      // Simular un toast
       alert('Alertas recalculadas con éxito a partir de los archivos de inventario.');
     }, 500);
   };
 
   // Aprobar un borrador de pedido sugerido por el chat IA
   const handleApproveOrder = (sucursal: string, ingredienteId: string, cantidad: number) => {
-    // Buscar la fila correspondiente y mutar su cantidad de pedido
     const updated = alerts.map(item => {
       if (item.sucursal === sucursal && item.ingrediente_id === ingredienteId) {
         return {
@@ -82,7 +99,6 @@ export default function DashboardPage() {
       return item;
     });
 
-    // Recalcular alertas del consolidado
     setAlerts(recalculateAlerts(updated));
   };
 
@@ -127,11 +143,27 @@ export default function DashboardPage() {
     }
   };
 
+  // Spinner de validación inicial
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#FBF9F6] flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-8 h-8 text-[#b7131a] animate-spin" />
+        <span className="text-xs text-[#5f5e5e] font-bold uppercase tracking-wider">Verificando Credenciales...</span>
+      </div>
+    );
+  }
+
+  // Si no ha iniciado sesión, mostrar pantalla de Login
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <Layout 
       activeTab={activeTab} 
       setActiveTab={setActiveTab} 
       onRecalculate={handleRecalculate}
+      onLogout={handleLogout}
     >
       {renderContent()}
     </Layout>
