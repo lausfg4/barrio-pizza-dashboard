@@ -93,9 +93,10 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
 
     const stock = activeAlert.stock_actual_unidad_base;
     const proyeccion = activeAlert.proyeccion;
+    const ped = activeAlert.pedido_unidad_base;
     
-    // Días de cobertura = (Stock / Proyección Semanal) * 7
-    const coberturaDias = proyeccion > 0 ? (stock / proyeccion) * 7 : (stock > 0 ? 99.0 : 0.0);
+    // Días de cobertura = ((Stock Actual + Pedido) / Proyección Semanal) * 7
+    const coberturaDias = proyeccion > 0 ? ((stock + ped) / proyeccion) * 7 : ((stock + ped) > 0 ? 99.0 : 0.0);
     
     let coberturaStatus = 'Suficiente 🟢';
     let coberturaClass = 'bg-[#10B981]/10 text-[#059669]';
@@ -107,8 +108,8 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
       coberturaClass = 'bg-[#F59E0B]/10 text-[#D97706]';
     }
 
-    // Desperdicio estimado = stock - proyeccion (si es perecedero)
-    const desperdicioVal = activeAlert.es_perecedero === 'Si' ? Math.max(0, stock - proyeccion) : 0;
+    // Desperdicio estimado = (Stock Actual + Pedido) - Proyección (si es perecedero)
+    const desperdicioVal = activeAlert.es_perecedero === 'Si' ? Math.max(0, stock + ped - proyeccion) : 0;
 
     return {
       consumoPromedio: consumoProm.toFixed(1),
