@@ -185,6 +185,38 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
     return ingredientes.find(i => i.id === selectedIngrediente)?.nombre || 'Ingrediente';
   }, [ingredientes, selectedIngrediente]);
 
+  const alertBanner = useMemo(() => {
+    if (!activeAlert) return null;
+
+    const sucursal = activeAlert.sucursal;
+    const ingrediente = activeAlert.nombre;
+    const unidad = activeAlert.unidad_base;
+    const ped = activeAlert.pedido_unidad_base;
+    const proj = activeAlert.proyeccion;
+
+    if (activeAlert.alerta_tipo === 'Riesgo de Quiebre') {
+      return {
+        type: 'danger',
+        message: `ALERTA: ${sucursal} está pidiendo ${ped.toFixed(1)} ${unidad} de ${ingrediente} menos que lo proyectado (${proj.toFixed(1)} ${unidad}) → riesgo de quiebre.`
+      };
+    } else if (activeAlert.alerta_tipo === 'Insumo Olvidado') {
+      return {
+        type: 'warning',
+        message: `ALERTA: ${sucursal} no incluyó ${ingrediente} en el pedido, pero se proyecta una necesidad de ${proj.toFixed(1)} ${unidad} → riesgo de desabastecimiento.`
+      };
+    } else if (activeAlert.alerta_tipo === 'Sobre-pedido') {
+      return {
+        type: 'excess',
+        message: `ALERTA: ${sucursal} está pidiendo ${ped.toFixed(1)} ${unidad} de ${ingrediente} de más en comparación a lo proyectado (${proj.toFixed(1)} ${unidad}) → riesgo de merma.`
+      };
+    } else {
+      return {
+        type: 'success',
+        message: `✓ El pedido de ${ped.toFixed(1)} ${unidad} de ${ingrediente} en ${sucursal} cubre adecuadamente la necesidad proyectada.`
+      };
+    }
+  }, [activeAlert]);
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -227,6 +259,21 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
           </div>
         </div>
       </div>
+
+      {/* Alert Warning/Success Banner Box */}
+      {alertBanner && (
+        <div className={`border-l-4 rounded-xl p-4 text-xs font-bold shadow-sm ${
+          alertBanner.type === 'danger'
+            ? 'bg-[#fff0ee] border-[#b7131a] text-[#b7131a]'
+            : alertBanner.type === 'warning'
+            ? 'bg-[#eff6ff] border-[#2563EB] text-[#2563EB]'
+            : alertBanner.type === 'excess'
+            ? 'bg-[#fffbeb] border-[#D97706] text-[#D97706]'
+            : 'bg-[#ecfdf5] border-[#10B981] text-[#059669]'
+        }`}>
+          {alertBanner.message}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -352,45 +399,6 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
         </div>
       </div>
 
-      {/* Bottom Detail Table */}
-      <div className="bg-white border border-[#e4beb9]/30 rounded-2xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-[#e4beb9]/20">
-          <h3 className="text-sm font-bold text-[#271716] uppercase tracking-wider">Detalle de Cobertura de Stock ({selectedSucursal})</h3>
-        </div>
-        <div className="max-h-[480px] overflow-y-auto overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#fff0ee]/15 border-b border-[#e4beb9]/20 sticky top-0 z-10 backdrop-blur-md">
-                <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Ingrediente</th>
-                <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Sucursal</th>
-                <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Consumo Promedio</th>
-                <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Stock Actual</th>
-                <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5">Días Cobertura</th>
-                <th className="text-xs font-bold text-[#5f5e5e] py-3.5 px-5 text-center">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="text-xs font-medium text-[#271716]">
-              {detailTableData.map((row, index) => {
-                return (
-                  <tr 
-                    key={`${row.sucursal}-${row.ingrediente}`} 
-                    className={`border-b border-[#e4beb9]/10 hover:bg-[#fff8f7] transition-colors h-[48px] ${
-                      index % 2 === 1 ? 'bg-[#fff8f7]/40' : ''
-                    }`}
-                  >
-                    <td className="py-2 px-5 font-bold">{row.ingrediente}</td>
-                    <td className="py-2 px-5 font-semibold text-[#5f5e5e]">{row.sucursal}</td>
-                    <td className="py-2 px-5 font-mono">{row.promedio}</td>
-                    <td className="py-2 px-5 font-mono font-semibold">{row.stock}</td>
-                    <td className="py-2 px-5 font-mono font-bold text-[#b7131a]">{row.cobertura}</td>
-                    <td className="py-2 px-5 text-center font-bold">{row.estado}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }
