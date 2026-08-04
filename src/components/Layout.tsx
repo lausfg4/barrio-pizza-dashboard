@@ -17,6 +17,7 @@ interface LayoutProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onRecalculate: () => void;
+  onLogout?: () => void;
   children: React.ReactNode;
 }
 
@@ -24,6 +25,7 @@ export default function Layout({
   activeTab, 
   setActiveTab, 
   onRecalculate, 
+  onLogout,
   children 
 }: LayoutProps) {
   const menuItems = [
@@ -86,7 +88,7 @@ export default function Layout({
         {/* Sidebar Footer */}
         <div>
           {/* Re-Calculate Button */}
-          <div className="px-4 mb-4">
+          <div className="px-4 mb-3">
             <button
               onClick={onRecalculate}
               className="w-full bg-[#b7131a] hover:bg-[#93000d] text-white py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -95,24 +97,17 @@ export default function Layout({
               <span>Re-Calcular Alertas</span>
             </button>
           </div>
-
-          {/* Adjustments & Support Links */}
-          <div className="border-t border-[#e4beb9]/30 pt-3">
-            <ul className="flex flex-col text-xs font-semibold">
-              <li>
-                <a href="#settings" className="flex items-center gap-3 px-6 py-3 text-[#5f5e5e] hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-all">
-                  <Settings className="w-4 h-4" />
-                  <span>Ajustes</span>
-                </a>
-              </li>
-              <li>
-                <a href="#support" className="flex items-center gap-3 px-6 py-3 text-[#5f5e5e] hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-all">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Soporte</span>
-                </a>
-              </li>
-            </ul>
-          </div>
+          {/* Logout Button */}
+          {onLogout && (
+            <div className="px-4 mb-4">
+              <button
+                onClick={onLogout}
+                className="w-full bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/60 text-[#b7131a] py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -124,15 +119,6 @@ export default function Layout({
             <h2 className="text-md font-bold text-[#271716] hidden md:block">
               Barrio Pizza — Control de Órdenes
             </h2>
-            {/* Search Input */}
-            <div className="relative w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5f5e5e]" />
-              <input
-                type="text"
-                placeholder="Buscar insumos..."
-                className="w-full bg-[#fff0ee]/40 border border-[#e4beb9]/60 rounded-full py-1.5 pl-9 pr-4 text-xs font-medium focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a] transition-all text-[#271716]"
-              />
-            </div>
           </div>
 
           {/* Action Bar */}
@@ -144,12 +130,8 @@ export default function Layout({
               Re-Calcular Alertas
             </button>
             <div className="flex items-center gap-2 text-[#5f5e5e]">
-              <button className="p-2 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors relative">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#b7131a] rounded-full"></span>
-              </button>
-              <button className="p-1 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors flex items-center justify-center font-bold bg-[#e4e2e1] w-8 h-8 text-xs text-[#271716]">
-                L
+              <button className="p-1 rounded-full hover:bg-[#e4e2e1]/30 hover:text-[#b7131a] transition-colors flex items-center justify-center font-bold bg-[#e4e2e1] w-8 h-8 text-xs text-[#271716]" title="Administrador">
+                A
               </button>
             </div>
           </div>

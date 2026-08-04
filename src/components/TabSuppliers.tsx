@@ -150,6 +150,33 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
     document.body.removeChild(link);
   };
 
+  // Exportar datos a CSV
+  const handleExportCSV = (order: typeof orders[0]) => {
+    const headers = ['Insumo', 'Cantidad Pedida', 'Formato', 'Costo Estimado (USD)'];
+    const rows = order.items.map(i => [
+      i.ingrediente,
+      i.cantidadFormatos,
+      i.formato,
+      i.costoEstimado.toFixed(2)
+    ]);
+
+    const csvContent = [
+      `Proveedor: ${order.proveedor}`,
+      '',
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Pedido_${order.proveedor.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -231,6 +258,13 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
 
                     {/* Export Actions */}
                     <div className="flex justify-end gap-2.5">
+                      <button
+                        onClick={() => handleExportCSV(order)}
+                        className="bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/50 text-[#b7131a] text-xs font-bold py-2.5 px-5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Exportar CSV</span>
+                      </button>
                       <button
                         onClick={() => handleExportExcel(order)}
                         className="bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/50 text-[#b7131a] text-xs font-bold py-2.5 px-5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
