@@ -18,7 +18,8 @@ import {
   Calendar, 
   Database, 
   AlertTriangle, 
-  Trash2
+  Trash2,
+  Archive
 } from 'lucide-react';
 
 interface TabAnalyticsProps {
@@ -82,7 +83,8 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
         coberturaStatus: 'Sin Datos',
         coberturaClass: 'bg-gray-100 text-gray-500',
         desperdicio: '0.0',
-        unidad: ''
+        unidad: '',
+        esPerecedero: false
       };
     }
 
@@ -108,8 +110,9 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
       coberturaClass = 'bg-[#F59E0B]/10 text-[#D97706]';
     }
 
-    // Desperdicio estimado = (Stock Actual + Pedido) - Proyección (si es perecedero)
-    const desperdicioVal = activeAlert.es_perecedero === 'Si' ? Math.max(0, stock + ped - proyeccion) : 0;
+    // Desperdicio / Exceso estimado = (Stock Actual + Pedido) - Proyección (se calcula para todos los insumos)
+    const desperdicioVal = Math.max(0, stock + ped - proyeccion);
+    const esPerecedero = activeAlert.es_perecedero === 'Si';
 
     return {
       consumoPromedio: consumoProm.toFixed(1),
@@ -118,7 +121,8 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
       coberturaStatus,
       coberturaClass,
       desperdicio: desperdicioVal.toFixed(1),
-      unidad: activeAlert.unidad_base
+      unidad: activeAlert.unidad_base,
+      esPerecedero
     };
   }, [activeAlert, activeConsumos]);
 
@@ -157,31 +161,6 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
     }));
   }, [alerts, selectedIngrediente, ingredientes]);
 
-  // Tabla inferior: listado de todos los insumos de la sucursal seleccionada
-  const detailTableData = useMemo(() => {
-    const targetSuc = selectedSucursal || (sucursales[0] || '');
-    const filteredAlerts = alerts.filter(a => a.sucursal === targetSuc);
-
-    return filteredAlerts.map(a => {
-      const promedioSemana = a.proyeccion;
-      const stock = a.stock_actual_unidad_base;
-      const coberturaDias = promedioSemana > 0 ? (stock / (promedioSemana / 7)) : (stock > 0 ? 99 : 0);
-
-      let estado = 'Suficiente 🟢';
-      if (coberturaDias < 3) estado = 'Crítico 🔴';
-      else if (coberturaDias < 7) estado = 'Regular 🟡';
-
-      return {
-        ingrediente: a.nombre,
-        sucursal: a.sucursal,
-        promedio: `${promedioSemana.toFixed(1)} ${a.unidad_base}/sem`,
-        stock: `${stock.toFixed(1)} ${a.unidad_base}`,
-        cobertura: `${coberturaDias.toFixed(1)} días`,
-        estado
-      };
-    });
-  }, [alerts, selectedSucursal, sucursales]);
-
   const activeIngredienteName = useMemo(() => {
     return ingredientes.find(i => i.id === selectedIngrediente)?.nombre || 'Ingrediente';
   }, [ingredientes, selectedIngrediente]);
@@ -194,11 +173,13 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
     const unidad = activeAlert.unidad_base;
     const ped = activeAlert.pedido_unidad_base;
     const proj = activeAlert.proyeccion;
+    const nec = activeAlert.necesidad_real;
 
     if (activeAlert.alerta_tipo === 'Riesgo de Quiebre') {
+      const falta = nec - ped;
       return {
         type: 'danger',
-        message: `ALERTA: ${sucursal} está pidiendo ${ped.toFixed(1)} ${unidad} de ${ingrediente} menos que lo proyectado (${proj.toFixed(1)} ${unidad}) → riesgo de quiebre.`
+        message: `ALERTA: ${sucursal} está pidiendo ${ped.toFixed(1)} ${unidad} de ${ingrediente}, pero requiere ${nec.toFixed(1)} ${unidad} (falta ${falta.toFixed(1)} ${unidad}) → riesgo de quiebre.`
       };
     } else if (activeAlert.alerta_tipo === 'Insumo Olvidado') {
       return {
@@ -206,9 +187,11 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
         message: `ALERTA: ${sucursal} no incluyó ${ingrediente} en el pedido, pero se proyecta una necesidad de ${proj.toFixed(1)} ${unidad} → riesgo de desabastecimiento.`
       };
     } else if (activeAlert.alerta_tipo === 'Sobre-pedido') {
+      const exceso = ped - nec;
+      const perecederoWarn = activeAlert.es_perecedero === 'Si' ? ' → riesgo de merma.' : ' → sobre-stock inmovilizado.';
       return {
         type: 'excess',
-        message: `ALERTA: ${sucursal} está pidiendo ${ped.toFixed(1)} ${unidad} de ${ingrediente} de más en comparación a lo proyectado (${proj.toFixed(1)} ${unidad}) → riesgo de merma.`
+        message: `ALERTA: ${sucursal} está pidiendo ${exceso.toFixed(1)} ${unidad} de ${ingrediente} de más en comparación a lo proyectado (${proj.toFixed(1)} ${unidad})${perecederoWarn}`
       };
     } else {
       return {
@@ -316,15 +299,27 @@ export default function TabAnalytics({ alerts, consumo }: TabAnalyticsProps) {
           </div>
         </div>
 
-        {/* KPI 4: Desperdicio Estimado */}
+        {/* KPI 4: Desperdicio/Sobre-stock Estimado */}
         <div className="bg-white border border-[#e4beb9]/30 rounded-2xl p-6 flex flex-col justify-between hover:shadow-[0px_4px_16px_rgba(183,28,28,0.03)] transition-all">
           <div className="flex justify-between items-start mb-6">
-            <span className="text-[11px] font-bold text-[#5f5e5e] uppercase tracking-wider">Desperdicio Estimado</span>
-            <Trash2 className="w-5 h-5 text-[#5f5e5e]" />
+            <span className="text-[11px] font-bold text-[#5f5e5e] uppercase tracking-wider">
+              {metrics.esPerecedero ? 'Desperdicio Estimado' : 'Sobre-stock Estimado'}
+            </span>
+            {metrics.esPerecedero ? (
+              <Trash2 className="w-5 h-5 text-[#b7131a]" />
+            ) : (
+              <Archive className="w-5 h-5 text-[#D97706]" />
+            )}
           </div>
           <div className="flex items-end justify-between">
             <div className="text-2xl font-bold text-[#271716]">{metrics.desperdicio} {metrics.unidad}</div>
-            <div className="text-[10px] text-[#D97706] bg-[#F59E0B]/10 px-2 py-0.5 rounded font-bold">Exceso Estimado</div>
+            <div className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+              metrics.esPerecedero 
+                ? 'text-[#b7131a] bg-[#fff0ee]' 
+                : 'text-[#D97706] bg-[#F59E0B]/10'
+            }`}>
+              {metrics.esPerecedero ? 'Exceso Perecedero' : 'Sobre-stock Seco'}
+            </div>
           </div>
         </div>
       </div>
