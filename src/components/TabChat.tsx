@@ -105,10 +105,10 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
 `;
 
       const ai = new GoogleGenerativeAI(apiKey);
-      const model = ai.getGenerativeModel({ 
-        model: 'gemini-3.5-flash',
-        systemInstruction: systemInstruction
-      });
+      const modelsToTry = ['gemini-3.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      let responseText = '';
+      let success = false;
+      let lastErrorMessage = '';
 
       // Alimentar el historial de chat para mantener el contexto, asegurando que comience con un rol 'user'
       const firstUserIdx = messages.findIndex(m => m.role === 'user');
@@ -119,12 +119,32 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
           }))
         : [];
 
-      const chat = model.startChat({
-        history: cleanHistory
-      });
+      for (const modelName of modelsToTry) {
+        try {
+          const model = ai.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: systemInstruction
+          });
 
-      const response = await chat.sendMessage(textToSend);
-      const replyText = response.response.text() || '';
+          const chat = model.startChat({
+            history: cleanHistory
+          });
+
+          const response = await chat.sendMessage(textToSend);
+          responseText = response.response.text() || '';
+          success = true;
+          break; // Salir si fue exitoso
+        } catch (err: any) {
+          console.warn(`Error con el modelo ${modelName}:`, err);
+          lastErrorMessage = err.message || err.toString();
+        }
+      }
+
+      if (!success) {
+        throw new Error(`Todos los modelos de Gemini fallaron. Último error: ${lastErrorMessage}`);
+      }
+
+      const replyText = responseText;
 
       // Interceptar tag de borrador de orden en la respuesta
       const draftRegex = /\[BORRADOR:\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/i;
