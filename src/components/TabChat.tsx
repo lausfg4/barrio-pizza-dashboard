@@ -46,13 +46,10 @@ export default function TabChat({ alerts, onApproveOrder, onShowToast }: TabChat
   const [showKeyWidget, setShowKeyWidget] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Intentar cargar la API key del entorno o del localStorage al iniciar
+  // Intentar cargar la API key del entorno al iniciar
   useEffect(() => {
-    const localKey = localStorage.getItem('GEMINI_API_KEY') || '';
     const envKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-    if (localKey) {
-      setApiKey(localKey);
-    } else if (envKey) {
+    if (envKey) {
       setApiKey(envKey);
     } else {
       setShowKeyWidget(true);
@@ -63,12 +60,6 @@ export default function TabChat({ alerts, onApproveOrder, onShowToast }: TabChat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
-
-  const saveApiKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('GEMINI_API_KEY', key);
-    setShowKeyWidget(false);
-  };
 
   const suggestions = [
     'Sugerir orden para Costa del Este',
@@ -114,10 +105,10 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
 `;
 
       const ai = new GoogleGenerativeAI(apiKey);
-      const model = ai.getGenerativeModel({ 
-        model: 'gemini-3.5-flash',
-        systemInstruction: systemInstruction
-      });
+      const modelsToTry = ['gemini-3.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      let responseText = '';
+      let success = false;
+      let lastErrorMessage = '';
 
       // Alimentar el historial de chat para mantener el contexto, asegurando que comience con un rol 'user'
       const firstUserIdx = messages.findIndex(m => m.role === 'user');
@@ -128,12 +119,32 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
           }))
         : [];
 
-      const chat = model.startChat({
-        history: cleanHistory
-      });
+      for (const modelName of modelsToTry) {
+        try {
+          const model = ai.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: systemInstruction
+          });
 
-      const response = await chat.sendMessage(textToSend);
-      const replyText = response.response.text() || '';
+          const chat = model.startChat({
+            history: cleanHistory
+          });
+
+          const response = await chat.sendMessage(textToSend);
+          responseText = response.response.text() || '';
+          success = true;
+          break; // Salir si fue exitoso
+        } catch (err: any) {
+          console.warn(`Error con el modelo ${modelName}:`, err);
+          lastErrorMessage = err.message || err.toString();
+        }
+      }
+
+      if (!success) {
+        throw new Error(`Todos los modelos de Gemini fallaron. Último error: ${lastErrorMessage}`);
+      }
+
+      const replyText = responseText;
 
       // Interceptar tag de borrador de orden en la respuesta
       const draftRegex = /\[BORRADOR:\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/i;
@@ -202,30 +213,13 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
 
       {/* API Key Configure Banner */}
       {showKeyWidget && (
-        <div className="bg-[#fff0ee] border border-[#e4beb9] rounded-2xl p-5 flex flex-col md:flex-row items-center gap-4 justify-between shadow-sm">
-          <div className="flex items-center gap-3">
-            <Lock className="w-8 h-8 text-[#b7131a]" />
-            <div>
-              <h4 className="text-sm font-bold text-[#b7131a]">API Key de Gemini Requerida</h4>
-              <p className="text-xs text-[#5f5e5e] font-semibold">Pega tu clave para poder conectarte con el modelo inteligente de Google.</p>
-            </div>
-          </div>
-          <div className="w-full md:w-auto flex gap-2">
-            <input
-              type="password"
-              placeholder="AIzaSy..."
-              className="bg-white border border-[#e4beb9]/60 rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#b7131a] flex-1 md:w-48"
-              id="chat_api_key_input"
-            />
-            <button
-              onClick={() => {
-                const el = document.getElementById('chat_api_key_input') as HTMLInputElement;
-                if (el?.value) saveApiKey(el.value);
-              }}
-              className="bg-[#b7131a] hover:bg-[#93000d] text-white text-xs font-bold py-1.5 px-4 rounded-lg transition-all"
-            >
-              Guardar
-            </button>
+        <div className="bg-[#fff0ee] border border-[#e4beb9] rounded-2xl p-5 flex items-center gap-3 shadow-sm">
+          <Lock className="w-8 h-8 text-[#b7131a] flex-shrink-0" />
+          <div>
+            <h4 className="text-sm font-bold text-[#b7131a]">Asistente IA Desactivado</h4>
+            <p className="text-xs text-[#5f5e5e] font-semibold">
+              Para usar el chat, configura la variable de entorno <code className="bg-white/60 px-1.5 py-0.5 rounded text-[#b7131a] font-mono">NEXT_PUBLIC_GEMINI_API_KEY</code> en el panel de Vercel.
+            </p>
           </div>
         </div>
       )}
@@ -236,7 +230,7 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
           <button
             key={s}
             onClick={() => handleSendMessage(s)}
-            disabled={isLoading}
+            disabled={isLoading || !apiKey}
             className="bg-white hover:bg-[#fff8f7] border border-[#e4beb9]/40 text-[#271716] text-xs font-bold py-2 px-4 rounded-full transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#b7131a]" />
@@ -347,13 +341,13 @@ Ejemplo de tag: [BORRADOR: Quesos de la Villa | Costa del Este | Mozzarella | 18
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(input)}
-          disabled={isLoading}
+          disabled={isLoading || !apiKey}
           placeholder={apiKey ? "Pregúntale a Barrio Pizza AI..." : "Configura tu API Key primero..."}
           className="flex-1 bg-white border border-[#e4beb9]/60 rounded-full px-5 py-3 text-xs font-semibold focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a] shadow-sm disabled:opacity-50 text-[#271716]"
         />
         <button
           onClick={() => handleSendMessage(input)}
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !input.trim() || !apiKey}
           className="bg-[#b7131a] hover:bg-[#93000d] text-white rounded-full w-12 h-12 flex items-center justify-center transition-all shadow-md disabled:opacity-50"
         >
           <Send className="w-5 h-5" />
