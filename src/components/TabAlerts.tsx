@@ -10,7 +10,8 @@ import {
   ClipboardList, 
   TrendingUp, 
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
 
 interface TabAlertsProps {
@@ -21,6 +22,7 @@ interface TabAlertsProps {
 export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
   const [selectedSucursal, setSelectedSucursal] = useState<string>('all');
   const [selectedAlertaTipo, setSelectedAlertaTipo] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Obtener sucursales únicas para el dropdown
   const sucursales = useMemo(() => {
@@ -76,13 +78,17 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
   const filteredAlerts = useMemo(() => {
     return alerts.filter(a => {
       const matchSucursal = selectedSucursal === 'all' || a.sucursal === selectedSucursal;
+      
       let matchTipo = true;
       if (selectedAlertaTipo === 'critico') matchTipo = a.alerta_tipo === 'Riesgo de Quiebre';
       else if (selectedAlertaTipo === 'sobrepedido') matchTipo = a.alerta_tipo === 'Sobre-pedido';
       else if (selectedAlertaTipo === 'olvido') matchTipo = a.alerta_tipo === 'Insumo Olvidado';
-      return matchSucursal && matchTipo;
+      
+      const matchSearch = a.nombre.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchSucursal && matchTipo && matchSearch;
     });
-  }, [alerts, selectedSucursal, selectedAlertaTipo]);
+  }, [alerts, selectedSucursal, selectedAlertaTipo, searchQuery]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,19 +153,35 @@ export default function TabAlerts({ alerts, setAlerts }: TabAlertsProps) {
       </div>
 
       {/* Filter and Control Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-white border border-[#e4beb9]/30 rounded-xl p-3 gap-4 shadow-sm">
-        <div className="w-full md:w-auto relative">
-          <select 
-            value={selectedSucursal}
-            onChange={(e) => setSelectedSucursal(e.target.value)}
-            className="w-full md:w-64 bg-transparent border border-[#e4beb9]/50 rounded-lg py-2 pl-4 pr-10 text-sm font-semibold text-[#271716] cursor-pointer focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a] appearance-none"
-          >
-            <option value="all">Todas las Sucursales</option>
-            {sucursales.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-[#5f5e5e]">▼</div>
+      <div className="flex flex-col md:flex-row justify-between items-center bg-white border border-[#e4beb9]/30 rounded-xl p-3 gap-4 shadow-sm w-full">
+        
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-1">
+          {/* Sucursal select dropdown */}
+          <div className="w-full sm:w-auto relative">
+            <select 
+              value={selectedSucursal}
+              onChange={(e) => setSelectedSucursal(e.target.value)}
+              className="w-full sm:w-48 bg-transparent border border-[#e4beb9]/50 rounded-lg py-2 pl-4 pr-10 text-sm font-semibold text-[#271716] cursor-pointer focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a] appearance-none"
+            >
+              <option value="all">Todas las Sucursales</option>
+              {sucursales.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-[#5f5e5e]">▼</div>
+          </div>
+
+          {/* Ingredient search input */}
+          <div className="w-full sm:w-64 relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5f5e5e]" />
+            <input
+              type="text"
+              placeholder="Buscar ingrediente..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent border border-[#e4beb9]/50 rounded-lg py-2 pl-9 pr-4 text-sm font-semibold text-[#271716] placeholder-[#5f5e5e]/50 focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a]"
+            />
+          </div>
         </div>
 
         {/* Filter Pills */}
