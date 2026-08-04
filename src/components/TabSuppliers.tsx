@@ -10,10 +10,16 @@ interface TabSuppliersProps {
 
 export default function TabSuppliers({ alerts }: TabSuppliersProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  const [selectedSucursal, setSelectedSucursal] = useState<string>('all');
+
+  // Obtener sucursales únicas para el dropdown
+  const sucursales = useMemo(() => {
+    return Array.from(new Set(alerts.map(a => a.sucursal))).sort();
+  }, [alerts]);
 
   // Agrupar órdenes por Proveedor
   const orders = useMemo(() => {
-    const ordersMap = new Map<string, Array<{
+    const ordersMap = new Map<string, Map<string, {
       ingrediente: string;
       cantidadFormatos: number;
       formato: string;
@@ -21,25 +27,39 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
     }>>();
 
     alerts.forEach(a => {
+      // Filtrar por sucursal seleccionada
+      if (selectedSucursal !== 'all' && a.sucursal !== selectedSucursal) {
+        return;
+      }
+
       // Solo incluimos insumos con pedido mayor a 0
       if (a.cantidad_formatos > 0) {
         const prov = a.proveedor || 'Distribuidora DPA';
 
         if (!ordersMap.has(prov)) {
-          ordersMap.set(prov, []);
+          ordersMap.set(prov, new Map());
         }
 
-        ordersMap.get(prov)!.push({
-          ingrediente: a.nombre,
-          cantidadFormatos: a.cantidad_formatos,
-          formato: a.formato_compra,
-          unidadBasePorFormato: a.unidad_base_por_formato
-        });
+        const providerMap = ordersMap.get(prov)!;
+        const key = a.ingrediente_id; // Clave única por insumo para acumular cantidades
+
+        if (providerMap.has(key)) {
+          const existing = providerMap.get(key)!;
+          existing.cantidadFormatos += a.cantidad_formatos;
+        } else {
+          providerMap.set(key, {
+            ingrediente: a.nombre,
+            cantidadFormatos: a.cantidad_formatos,
+            formato: a.formato_compra,
+            unidadBasePorFormato: a.unidad_base_por_formato
+          });
+        }
       }
     });
 
     // Crear lista de proveedores con códigos y metadatos simulados
-    const list = Array.from(ordersMap.entries()).map(([proveedor, items], index) => {
+    const list = Array.from(ordersMap.entries()).map(([proveedor, itemsMap], index) => {
+      const items = Array.from(itemsMap.values());
       const initials = proveedor.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
       // Metadatos simulados por consistencia
@@ -58,7 +78,7 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
     });
 
     return list;
-  }, [alerts]);
+  }, [alerts, selectedSucursal]);
 
   // Exportar datos a un archivo Excel formateado (.xls HTML)
   const handleExportExcel = (order: typeof orders[0]) => {
@@ -138,10 +158,26 @@ export default function TabSuppliers({ alerts }: TabSuppliersProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-1 mb-2">
-        <h2 className="text-3xl font-bold text-[#271716] tracking-tight">Pedidos por Proveedor</h2>
-        <p className="text-sm text-[#5f5e5e] font-medium">Órdenes de Compra Agrupadas</p>
+      {/* Header and Filter */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-3xl font-bold text-[#271716] tracking-tight">Pedidos por Proveedor</h2>
+          <p className="text-sm text-[#5f5e5e] font-medium">Órdenes de Compra Agrupadas</p>
+        </div>
+
+        <div className="relative w-full md:w-64">
+          <select 
+            value={selectedSucursal}
+            onChange={(e) => setSelectedSucursal(e.target.value)}
+            className="w-full bg-white border border-[#e4beb9]/50 rounded-lg py-2 pl-4 pr-10 text-sm font-semibold text-[#271716] cursor-pointer focus:outline-none focus:border-[#b7131a] focus:ring-1 focus:ring-[#b7131a] appearance-none shadow-sm"
+          >
+            <option value="all">Todas las Sucursales</option>
+            {sucursales.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-[#5f5e5e]">▼</div>
+        </div>
       </div>
 
       {orders.length === 0 ? (
