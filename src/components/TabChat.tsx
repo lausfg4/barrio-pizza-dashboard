@@ -16,7 +16,7 @@ import {
 
 interface TabChatProps {
   alerts: AlertaConsolidada[];
-  onApproveOrder: (sucursal: string, ingredienteId: string, cantidad: number) => void;
+  onApproveOrder: (orders: Array<{ sucursal: string; ingredienteId: string; cantidad: number }>) => void;
   onShowToast: (message: string, type?: 'success' | 'info' | 'error') => void;
 }
 
@@ -228,11 +228,17 @@ Ejemplo de tags si varias sucursales lo necesitan:
     const group = message.drafts[draftIdx];
     if (!group) return;
 
-    group.destinos.forEach(dest => {
-      if (!dest.approved) {
-        onApproveOrder(dest.sucursal, group.ingredienteId, dest.cantidad);
-      }
-    });
+    const ordersToApprove = group.destinos
+      .filter(dest => !dest.approved)
+      .map(dest => ({
+        sucursal: dest.sucursal,
+        ingredienteId: group.ingredienteId,
+        cantidad: dest.cantidad
+      }));
+
+    if (ordersToApprove.length > 0) {
+      onApproveOrder(ordersToApprove);
+    }
 
     onShowToast(`Órdenes aprobadas para todas las sucursales de ${group.insumo}`, 'success');
 
@@ -260,18 +266,21 @@ Ejemplo de tags si varias sucursales lo necesitan:
     const message = messages[msgIndex];
     if (!message || !message.drafts) return;
 
-    let totalCount = 0;
+    const ordersToApprove: Array<{ sucursal: string; ingredienteId: string; cantidad: number }> = [];
     message.drafts.forEach(group => {
       group.destinos.forEach(dest => {
         if (!dest.approved) {
-          onApproveOrder(dest.sucursal, group.ingredienteId, dest.cantidad);
-          totalCount++;
+          ordersToApprove.push({
+            sucursal: dest.sucursal,
+            ingredienteId: group.ingredienteId,
+            cantidad: dest.cantidad
+          });
         }
       });
     });
 
-    if (totalCount > 0) {
-      onShowToast(`Se aprobaron todas las órdenes (${totalCount}) del mensaje`, 'success');
+    if (ordersToApprove.length > 0) {
+      onApproveOrder(ordersToApprove);
     }
 
     // Marcar todos como aprobados en el chat local

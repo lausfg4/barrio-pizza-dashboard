@@ -104,20 +104,27 @@ export default function DashboardPage() {
     }, 500);
   };
 
-  // Aprobar un borrador de pedido sugerido por el chat IA
-  const handleApproveOrder = (sucursal: string, ingredienteId: string, cantidad: number) => {
-    const updated = alerts.map(item => {
-      if (item.sucursal === sucursal && item.ingrediente_id === ingredienteId) {
-        return {
-          ...item,
-          cantidad_formatos: cantidad
-        };
-      }
-      return item;
+  // Aprobar uno o más borradores de pedido sugeridos por el chat IA
+  const handleApproveOrders = (orders: Array<{ sucursal: string; ingredienteId: string; cantidad: number }>) => {
+    setAlerts(prevAlerts => {
+      const updated = prevAlerts.map(item => {
+        const match = orders.find(o => o.sucursal === item.sucursal && o.ingredienteId === item.ingrediente_id);
+        if (match) {
+          return {
+            ...item,
+            cantidad_formatos: match.cantidad
+          };
+        }
+        return item;
+      });
+      return recalculateAlerts(updated);
     });
 
-    setAlerts(recalculateAlerts(updated));
-    showToast(`Pedido aprobado correctamente para ${sucursal}.`, 'success');
+    if (orders.length === 1) {
+      showToast(`Pedido aprobado correctamente para ${orders[0].sucursal}.`, 'success');
+    } else if (orders.length > 1) {
+      showToast(`Se aprobaron ${orders.length} pedidos sugeridos correctamente.`, 'success');
+    }
   };
 
   // Renderizar la vista activa
@@ -155,7 +162,7 @@ export default function DashboardPage() {
       case 'suppliers':
         return <TabSuppliers alerts={alerts} />;
       case 'chat':
-        return <TabChat alerts={alerts} onApproveOrder={handleApproveOrder} onShowToast={showToast} />;
+        return <TabChat alerts={alerts} onApproveOrder={handleApproveOrders} onShowToast={showToast} />;
       default:
         return <TabAlerts alerts={alerts} setAlerts={setAlerts} />;
     }
