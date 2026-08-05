@@ -93,6 +93,22 @@ El sistema compara el pedido actual de la sucursal (convertido a unidad base) co
 * Para los insumos catalogados en `ingredientes.csv` como **Perecederos** (`es_perecedero = 'Si'`), los excedentes de pedido se reflejan en la pestaña de Análisis como **"Desperdicio Estimado" 🗑️** con la etiqueta **"Exceso Perecedero"**.
 * Para los insumos **No Perecederos** (`es_perecedero = 'No'`), los excedentes se registran como **"Sobre-stock Estimado" 📦** bajo la etiqueta **"Sobre-stock Seco"**, evitando alertar por mermas en productos no perecederos.
 
+### 6. Lógica de las Tarjetas de Métricas (KPIs)
+En la pestaña de **Análisis de Consumo**, el sistema calcula cuatro indicadores clave para el insumo y sucursal seleccionados:
+
+* **Consumo Total Semanal**: Promedio simple del consumo histórico de las semanas registradas en la base de datos (por ejemplo, S1 a S6).
+  $$\text{Consumo Promedio} = \frac{\sum \text{Consumo de cada semana registrada}}{\text{Cantidad de semanas con registros}}$$
+* **Stock Promedio (Stock Actual)**: Inventario físico disponible en la bodega de la sucursal (`stock_actual_unidad_base`).
+* **Días de Cobertura**: Cantidad de días de autonomía del inventario, considerando el stock actual y el pedido solicitado contra la proyección semanal de consumo.
+  $$\text{Días de Cobertura} = \left( \frac{\text{Stock Actual} + \text{Pedido}}{\text{Proyección de Consumo Semanal}} \right) \times 7$$
+  * **Crítico 🔴**: Menos de 3.0 días de cobertura (riesgo inminente de desabastecimiento).
+  * **Regular 🟡**: Entre 3.0 y menos de 7.0 días de cobertura (holgura ajustada).
+  * **Suficiente 🟢**: 7.0 días o más de cobertura (inventario cubierto).
+* **Sobre-stock / Desperdicio Estimado**: El excedente de producto que quedará tras cubrir la demanda proyectada.
+  $$\text{Exceso} = \max(0, (\text{Stock Actual} + \text{Pedido}) - \text{Proyección Semanal})$$
+  * Si es perecedero, se etiqueta como **"Desperdicio Estimado" 🗑️ (Exceso Perecedero)**.
+  * Si no es perecedero, se etiqueta como **"Sobre-stock Estimado" 📦 (Sobre-stock Seco)**.
+
 ---
 
 ## 🛠️ Tecnologías y Librerías Utilizadas

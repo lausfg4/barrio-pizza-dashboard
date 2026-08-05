@@ -255,6 +255,41 @@ Ejemplo de tags si varias sucursales lo necesitan:
     }));
   };
 
+  // Aprobar todos los borradores de un mensaje
+  const handleApproveAllDrafts = (msgIndex: number) => {
+    const message = messages[msgIndex];
+    if (!message || !message.drafts) return;
+
+    let totalCount = 0;
+    message.drafts.forEach(group => {
+      group.destinos.forEach(dest => {
+        if (!dest.approved) {
+          onApproveOrder(dest.sucursal, group.ingredienteId, dest.cantidad);
+          totalCount++;
+        }
+      });
+    });
+
+    if (totalCount > 0) {
+      onShowToast(`Se aprobaron todas las órdenes (${totalCount}) del mensaje`, 'success');
+    }
+
+    // Marcar todos como aprobados en el chat local
+    setMessages(prev => prev.map((m, idx) => {
+      if (idx === msgIndex) {
+        const nextDrafts = m.drafts ? m.drafts.map(d => {
+          const nextDestinos = d.destinos.map(dest => ({ ...dest, approved: true }));
+          return { ...d, destinos: nextDestinos };
+        }) : [];
+        return {
+          ...m,
+          drafts: nextDrafts
+        };
+      }
+      return m;
+    }));
+  };
+
   return (
     <div className="flex flex-col gap-6 flex-1 max-w-4xl mx-auto w-full">
       {/* Header */}
@@ -324,6 +359,16 @@ Ejemplo de tags si varias sucursales lo necesitan:
               {/* Interactive Grouped Draft Cards if applicable */}
               {isAssistant && m.drafts && m.drafts.length > 0 && (
                 <div className="ml-11 flex flex-col gap-3 max-w-md w-full">
+                  {/* Botón para aprobar todos los borradores del mensaje */}
+                  {m.drafts.length > 1 && m.drafts.some(d => !d.destinos.every(dest => dest.approved)) && (
+                    <button
+                      onClick={() => handleApproveAllDrafts(idx)}
+                      className="bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md w-full mb-1"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Aprobar Todos los Borradores en esta Respuesta</span>
+                    </button>
+                  )}
                   {m.drafts.map((draft, dIdx) => {
                     const allApproved = draft.destinos.every(d => d.approved);
 
